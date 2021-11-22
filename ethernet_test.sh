@@ -35,12 +35,15 @@ ping $vm_ip -w 5 2>&1 | tee ethernet_test.log
 
 str=$(sed -n '2p' ethernet_test.log)
 #echo "string: $str"
-index=`expr index "$str" =`
+#index=`expr index "$str" =`
 #echo "index: $index"
-result=${str:$index+9:4}
+#result=${str:$index+9:4}
 #echo "result: $result"
 
-if [[ "$result" = "time" ]] && [[ $index != 0 ]]
+result=$(echo $str | grep "time")
+
+#if [[ "$result" = "time" ]] && [[ $index != 0 ]]
+if [[ "$result" != "" ]]
 then
 	echo "ETH0 PING PASS"
 	echo "ETH0 PING:      PASS" >> test_result.log
@@ -49,7 +52,7 @@ else
 	echo "ETH0 PING:        FAIL" >> test_result.log
 fi
 
-echo "******************ETH0 TCP testing..."
+echo "******************ETH0 TCP TX testing..."
 iperf3 -c $vm_ip -b $sbaud 2>&1 | tee ethernet_test.log
 
 str=$(sed -n '16p' ethernet_test.log)
@@ -72,7 +75,10 @@ else
 	echo "ETH0 TX:          FAIL  tx speed: $tx_speed" >> test_result.log
 fi
 
-str=$(sed -n '17p' ethernet_test.log)
+echo "******************ETH0 TCP RX testing..."
+iperf3 -c $vm_ip -b $sbaud -R 2>&1 | tee ethernet_test.log
+
+str=$(sed -n '18p' ethernet_test.log)
 #echo "string: $str"
 index=`expr index "$str" /`
 #echo "index: $index"

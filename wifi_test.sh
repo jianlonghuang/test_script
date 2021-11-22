@@ -31,6 +31,8 @@ str_psk=$(readINI $cfg_name $cfg_section psk)
 link_psk=$(echo $str_psk | sed 's/\r//')
 #echo $link_psk
 
+ifconfig wlan0 down
+sleep 1
 ifconfig wlan0 up
 
 echo "ctrl_interface=/var/run/wpa_supplicant" > /etc/wpa_supplicant.conf
@@ -40,10 +42,9 @@ echo "    ssid=\"$link_ssid\"" >> /etc/wpa_supplicant.conf
 echo "    psk=\"$link_psk\"" >> /etc/wpa_supplicant.conf
 echo "}" >> /etc/wpa_supplicant.conf
 
-
 wpa_supplicant -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf -d -f /var/log/wpa_supplicant.log &
 
-sleep 5
+#sleep 5
 udhcpc -i wlan0
 sleep 10
 echo "******************WLAN0 PING testing..."
@@ -53,12 +54,15 @@ ping $vm_ip -w 5 2>&1 | tee wlan_test.log
 
 str=$(sed -n '2p' wlan_test.log)
 #echo "string: $str"
-index=`expr index "$str" =`
+#index=`expr index "$str" =`
 #echo "index: $index"
-result=${str:$index+9:4}
+#result=${str:$index+9:4}
 #echo "result: $result"
 
-if [[ "$result" = "time" ]] && [[ $index != 0 ]]
+result=$(echo $str | grep "time")
+
+#if [[ "$result" = "time" ]] && [[ $index != 0 ]]
+if [[ "$result" != "" ]]
 then
 	echo "WLAN0 PING PASS"
 	echo "WLAN0 PING:     PASS" >> test_result.log
@@ -67,7 +71,7 @@ else
 	echo "WLAN0 PING:       FAIL" >> test_result.log
 fi
 
-echo "******************WLAN0 TCP testing..."
+echo "******************WLAN0 TCP TX testing..."
 iperf3 -c $vm_ip -b $sbaud 2>&1 | tee wlan_test.log
 
 str=$(sed -n '16p' wlan_test.log)
@@ -90,7 +94,10 @@ else
 	echo "WLAN0 TX:         FAIL  tx speed: $tx_speed" >> test_result.log
 fi
 
-str=$(sed -n '17p' wlan_test.log)
+echo "******************WLAN0 TCP RX testing..."
+iperf3 -c $vm_ip -b $sbaud -R 2>&1 | tee wlan_test.log
+
+str=$(sed -n '18p' wlan_test.log)
 #echo "string: $str"
 index=`expr index "$str" /`
 #echo "index: $index"
@@ -111,5 +118,6 @@ else
 fi
 
 killall wpa_supplicant
-sleep 5
+killall udhcpc
+sleep 3
 

@@ -84,7 +84,7 @@
 
 # Run
 
-1. modify the configure as required
+1. modify the configure file **cfg.ini** as required
 
 2. copy the folder **test_script** to board catalogue **/**
 
@@ -111,17 +111,9 @@
    
 4. if enable to test SD, make sure plug the tf card to slot;
    
-4. if enable to test ETH0, make sure the PC IP and start iperf3 serve;
+4. if enable to test ETH0, make sure ETH0 connect to PC/VM through a network cable, the PC/VM IP and ETH0 IP are on the same network segment, PC/VM open the iperf3 service, such as **iperf3 -s**;
    
-   ```
-   iperf3 -s
-   ```
-   
-4. if enable to test WIFI, make sure the PC link to route, and start iperf3 server
-   
-   ```
-   iperf3 -s
-   ```
+4. if enable to test WIFI, make sure the different network card of PC/VM connect to router, PC/VM open the iperf3 service, such as **iperf3 -s**
    
 4. if enable to test BLUETOOTH, make sure the device can be scanned during test
    

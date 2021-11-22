@@ -18,6 +18,8 @@ echo $dev_mac
 scan_cnt=3
 scan_over=0
 
+echo "******************BLUETOOTH testing..."
+
 hciconfig hci0 up
 
 bluetoothctl -- remove $dev_mac
