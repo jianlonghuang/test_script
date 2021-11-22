@@ -3,43 +3,81 @@
 
 
 > [ETHERNET]
+>
 > enable=y									#y: test; n: not test
+>
 > boardip=192.168.120.214	  #visionfive IP
+>
 > vmip=192.168.120.33		     #VM/PC IP
+>
 > baud=1000M				            #speed: 100M, 1000M, 10M
+>
 > expectbaudtcp=50		          #expect TCP speed(Mbit/s), to judge the test results
 >
+> 
+>
 > [USB]
+>
 > enable=y				                   #y: test; n: not test
+>
 > usbcnt=3				                   #USB interface counts, max: 4
+>
 > usb1device=sda1			         #usb device1 name
+>
 > usb2device=sdb1			        #usb device2 name
+>
 > usb3device=sdc1			         #usb device3 name
+>
 > usb4device=sdd1			        #usb device4 name
+>
 > blocksize=512k			             #blocksize to read
+>
 > blockcnt=100			                 #block count to read
+>
 > expectreadspeed=20		       #expect USB read speed(Mbit/s), to judge the test results
 >
+> 
+>
 > [SD]
+>
 > enable=y				                   #y: test; n: not test
+>
 > sddevice=mmcblk0p3		    #sd name
+>
 > blocksize=512k			            #blocksize to read
+>
 > blockcnt=100			                #block count to read
+>
 > expectreadspeed=3		         #expect SD read speed(Mbit/s), to judge the test results
 >
+> 
+>
 > [WLAN]
+>
 > enable=y				                   #y: test; n: not test
+>
 > vmip=192.168.50.11		       #VM/PC IP
+>
 > baud=1000M				           #speed: 100M, 1000M, 10M
+>
 > expectbaudtcp=50		         #expect TCP speed(Mbit/s), to judge the test results
+>
 > ssid=sdstarfive			            #Wifi name
+>
 > psk=sd22979600			        #WiFi password
 >
+> 
+>
 > [BLUETOOTH]
+>
 > enable=y				                    #y: test; n: not test
+>
 > devmac=B4:EE:25:EB:B8:E0    #bluetooth device MAC addr
 >
+> 
+>
 > [HDMI_PWMADC]
+>
 > enable=y					                 #y: test; n: not test
 
 
@@ -52,9 +90,10 @@
 
    If you have built TF Card Booting Image, you can see two partitions as follows:
 
-   ![tf_card](D:\work\VisionFive\20211116_product_test\image\tf_card.png)
-
-   
+   ```
+   /dev/sdb1       130M   65M   66M  50% /media/jianlong/4B80-BB12
+   /dev/sdb3        29G  162M   27G   1% /media/jianlong/465a8d4f-31fe-40c3-951e-4a565bd3a620
+   ```
 
    copy the folder to /dev/sdb3
 
@@ -69,18 +108,26 @@
    ```
 
 4. if enable to test USB, make sure plug the U disk first;
-   if enable to test SD, make sure plug the tf card to slot;
    
-   if enable to test ETH0, make sure the PC IP and start iperf3 server
+4. if enable to test SD, make sure plug the tf card to slot;
    
-   > iperf3 -s
+4. if enable to test ETH0, make sure the PC IP and start iperf3 serve;
    
-   if enable to test WIFI, make sure the PC link to route, and start iperf3 server
+   ```
+   iperf3 -s
+   ```
    
-   > iperf3 -s
+4. if enable to test WIFI, make sure the PC link to route, and start iperf3 server
    
-   if enable to test BLUETOOTH, make sure the device can be scanned during test
-   if enable to test HDMI/PWMADC, make sure input the result manually during test
+   ```
+   iperf3 -s
+   ```
+   
+4. if enable to test BLUETOOTH, make sure the device can be scanned during test
+   
+4. if enable to test HDMI/PWMADC, make sure input the result manually during test
+   
+   
 
 
 
