@@ -13,7 +13,7 @@ cfg_section=BLUETOOTH
 
 str_devmac=$(readINI $cfg_name $cfg_section devmac)
 dev_mac=$(echo $str_devmac | sed 's/\r//')
-echo $dev_mac
+#echo $dev_mac
 
 scan_cnt=3
 scan_over=0

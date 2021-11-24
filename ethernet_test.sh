@@ -29,21 +29,22 @@ expect_baudtcp=$(echo $str_expectbaudtcp | sed 's/\r//')
 
 echo "******************ETH0 PING testing..."
 ifconfig eth0 $board_ip netmask 255.255.255.0
-
+ping_over=0
 echo "ping $vm_ip -w 5"
 ping $vm_ip -w 5 2>&1 | tee ethernet_test.log
 
-str=$(sed -n '2p' ethernet_test.log)
-#echo "string: $str"
-#index=`expr index "$str" =`
-#echo "index: $index"
-#result=${str:$index+9:4}
-#echo "result: $result"
+while read line
+do
+	result=$(echo $line | grep "time")
+	if [[ "$result" != "" ]]
+	then
+		ping_over=1
+		echo "ping_over: $ping_over"
+		break
+	fi
+done < ethernet_test.log
 
-result=$(echo $str | grep "time")
-
-#if [[ "$result" = "time" ]] && [[ $index != 0 ]]
-if [[ "$result" != "" ]]
+if [[ $ping_over != 0 ]]
 then
 	echo "ETH0 PING PASS"
 	echo "ETH0 PING:      PASS" >> test_result.log

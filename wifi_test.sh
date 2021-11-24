@@ -43,26 +43,29 @@ echo "    psk=\"$link_psk\"" >> /etc/wpa_supplicant.conf
 echo "}" >> /etc/wpa_supplicant.conf
 
 wpa_supplicant -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf -d -f /var/log/wpa_supplicant.log &
-
-#sleep 5
 udhcpc -i wlan0
-sleep 10
+
 echo "******************WLAN0 PING testing..."
+ping_cnt=3
+ping_over=0
+while ( [ $ping_cnt -gt 0 ] && [ $ping_over -eq 0 ] )
+do
+	echo "ping $vm_ip -w 5 -I wlan0"
+	ping $vm_ip -w 5 -I wlan0 2>&1 | tee wlan_test.log
+	while read line
+	do
+		result=$(echo $line | grep "time")
+		if [[ "$result" != "" ]]
+		then
+			ping_over=1
+			echo "ping_over: $ping_over"
+			break
+		fi
+	done < wlan_test.log
+	let ping_cnt--
+done
 
-echo "ping $vm_ip -w 5"
-ping $vm_ip -w 5 2>&1 | tee wlan_test.log
-
-str=$(sed -n '2p' wlan_test.log)
-#echo "string: $str"
-#index=`expr index "$str" =`
-#echo "index: $index"
-#result=${str:$index+9:4}
-#echo "result: $result"
-
-result=$(echo $str | grep "time")
-
-#if [[ "$result" = "time" ]] && [[ $index != 0 ]]
-if [[ "$result" != "" ]]
+if [[ $ping_over != 0 ]]
 then
 	echo "WLAN0 PING PASS"
 	echo "WLAN0 PING:     PASS" >> test_result.log
@@ -119,5 +122,5 @@ fi
 
 killall wpa_supplicant
 killall udhcpc
-sleep 3
+
 
