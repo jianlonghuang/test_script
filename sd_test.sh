@@ -73,7 +73,7 @@ then
 	echo "SD:             PASS  speed: $speed Mbit/s" >> test_result.log
 else
 	echo "SD FAIL"
-	echo "SD:               FAIL  speed: $speed Mbit/s" >> test_result.log
+	echo "SD:             FAIL  speed: $speed Mbit/s" >> test_result.log
 fi
 
 

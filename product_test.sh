@@ -4,6 +4,8 @@ echo "************************************************"
 echo "******************Product Test******************"
 echo "************************************************"
 
+starttime=$(date +%s)
+
 rm *.log
 chmod 777 *
 cfg_name=cfg.ini
@@ -102,11 +104,32 @@ then
 	sh hdmi_pwmadc_test.sh
 fi
 
+endtime=$(date +%s)
+runmin=$(($endtime-$starttime))
+echo "running time: $runmin s"
 
 echo "************************************************"
 echo "*********************Result*********************"
 echo "************************************************"
-cat test_result.log
+#cat test_result.log
+IFS=''
+while read line
+do
+	result=$(echo $line | grep "PASS")
+	if [[ "$result" != "" ]]
+	then
+		echo $line
+	fi
+done < test_result.log
+
+while read line
+do
+	result=$(echo $line | grep "FAIL")
+	if [[ "$result" != "" ]]
+	then
+		echo $line
+	fi
+done < test_result.log
 
 rm *.log
 

@@ -35,7 +35,7 @@ ping $vm_ip -w 5 2>&1 | tee ethernet_test.log
 
 while read line
 do
-	result=$(echo $line | grep "time")
+	result=$(echo $line | grep "time=")
 	if [[ "$result" != "" ]]
 	then
 		ping_over=1
@@ -50,7 +50,7 @@ then
 	echo "ETH0 PING:      PASS" >> test_result.log
 else
 	echo "ETH0 PING FAIL"
-	echo "ETH0 PING:        FAIL" >> test_result.log
+	echo "ETH0 PING:      FAIL" >> test_result.log
 fi
 
 echo "******************ETH0 TCP TX testing..."
@@ -73,7 +73,7 @@ then
 	echo "ETH0 TX:        PASS  tx speed: $tx_speed" >> test_result.log
 else
 	echo "ETH0 TCP TX SPEED FAIL"
-	echo "ETH0 TX:          FAIL  tx speed: $tx_speed" >> test_result.log
+	echo "ETH0 TX:        FAIL  tx speed: $tx_speed" >> test_result.log
 fi
 
 echo "******************ETH0 TCP RX testing..."
@@ -97,7 +97,7 @@ then
 	echo "ETH0 RX:        PASS  rx speed: $rx_speed" >> test_result.log
 else
 	echo "ETH0 TCP RX SPEED FAIL"
-	echo "ETH0 RX:          FAIL  rx speed: $rx_speed" >> test_result.log
+	echo "ETH0 RX:        FAIL  rx speed: $rx_speed" >> test_result.log
 fi
 
 

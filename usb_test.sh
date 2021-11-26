@@ -109,7 +109,7 @@ do
 		echo "USB$cnt:           PASS  speed: $speed Mbit/s" >> test_result.log
 	else
 		echo "USB$cnt FAIL"
-		echo "USB$cnt:             FAIL  speed: $speed Mbit/s" >> test_result.log
+		echo "USB$cnt:           FAIL  speed: $speed Mbit/s" >> test_result.log
 	fi
 	
 	let cnt++

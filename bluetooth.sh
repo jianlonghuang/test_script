@@ -66,7 +66,7 @@ done < bluetooth.log
 if [ $suc_flag -eq 0 ]
 then
 	echo "BLUETOOTH FAIL"
-	echo "BLUETOOTH:        FAIL  connect fail" >> test_result.log
+	echo "BLUETOOTH:      FAIL  connect fail" >> test_result.log
 else
 	echo "BLUETOOTH PASS"
 	echo "BLUETOOTH:      PASS" >> test_result.log

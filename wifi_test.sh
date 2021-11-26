@@ -43,7 +43,7 @@ echo "    psk=\"$link_psk\"" >> /etc/wpa_supplicant.conf
 echo "}" >> /etc/wpa_supplicant.conf
 
 wpa_supplicant -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf -d -f /var/log/wpa_supplicant.log &
-udhcpc -i wlan0
+udhcpc -i wlan0 -n
 
 echo "******************WLAN0 PING testing..."
 ping_cnt=3
@@ -54,7 +54,7 @@ do
 	ping $vm_ip -w 5 -I wlan0 2>&1 | tee wlan_test.log
 	while read line
 	do
-		result=$(echo $line | grep "time")
+		result=$(echo $line | grep "time=")
 		if [[ "$result" != "" ]]
 		then
 			ping_over=1
@@ -71,7 +71,7 @@ then
 	echo "WLAN0 PING:     PASS" >> test_result.log
 else
 	echo "WLAN0 PING FAIL"
-	echo "WLAN0 PING:       FAIL" >> test_result.log
+	echo "WLAN0 PING:     FAIL" >> test_result.log
 fi
 
 echo "******************WLAN0 TCP TX testing..."
@@ -94,7 +94,7 @@ then
 	echo "WLAN0 TX:       PASS  tx speed: $tx_speed" >> test_result.log
 else
 	echo "WLAN0 TCP TX SPEED FAIL"
-	echo "WLAN0 TX:         FAIL  tx speed: $tx_speed" >> test_result.log
+	echo "WLAN0 TX:       FAIL  tx speed: $tx_speed" >> test_result.log
 fi
 
 echo "******************WLAN0 TCP RX testing..."
@@ -117,7 +117,7 @@ then
 	echo "WLAN0 RX:       PASS  rx speed: $rx_speed" >> test_result.log
 else
 	echo "WLAN0 TCP RX SPEED FAIL"
-	echo "WLAN0 RX:         FAIL  rx speed: $rx_speed" >> test_result.log
+	echo "WLAN0 RX:       FAIL  rx speed: $rx_speed" >> test_result.log
 fi
 
 killall wpa_supplicant

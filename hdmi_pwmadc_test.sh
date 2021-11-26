@@ -14,7 +14,7 @@ then
 	echo "HDMI:           PASS" >> test_result.log
 else
 	echo "HDMI   FAIL"
-	echo "HDMI:             FAIL" >> test_result.log
+	echo "HDMI:           FAIL" >> test_result.log
 fi
 
 if [[ "$pwmadc_test_result" == "y" ]]
@@ -23,5 +23,5 @@ then
 	echo "PWMADC:         PASS" >> test_result.log
 else
 	echo "PWMADC FAIL"
-	echo "PWMADC:           FAIL" >> test_result.log
+	echo "PWMADC:         FAIL" >> test_result.log
 fi
