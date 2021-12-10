@@ -60,7 +60,7 @@ atom4_info = 20
 |        | EEPLen      |               | 4           | total  length in bytes of all eeprom data (including this header) | 0x00000080                         |
 | ATOM1  | type        |               | 2           | 0x0001：vendor info                                          | 0x0001                             |
 |        | count       |               | 2           | 0x0001：incrementing atom count                              | 0x0001                             |
-|        | dlen        |               | 4           | length  in bytes of data+CRC                                 | 0x00000060                         |
+|        | dlen        |               | 4           | length  in bytes of data+CRC                                 | 0x00000058                         |
 |        | Vendor info | uuid          | 16          | 0x0,  Reserved field                                         | 0x00000000000000000000000000000000 |
 |        |             | pid           | 2           | 0x0,  Reserved field                                         | 0x0000                             |
 |        |             | pver          | 2           | 0x0,  Reserved field                                         | 0x0000                             |
@@ -71,7 +71,7 @@ atom4_info = 20
 |        | crc16       |               | 2           |                                                              |                                    |
 | ATOM4  | type        |               | 2           | 0x0004：manufacturer custom data                             | 0x0004                             |
 |        | count       |               | 2           | 0x0002：incrementing atom count                              | 0x0002                             |
-|        | dlen        |               | 4           | length  in bytes of data+CRC                                 | 0x00000014                         |
+|        | dlen        |               | 4           | length  in bytes of data+CRC                                 | 0x0000000C                         |
 |        | custom data | Version       | 2           | 0x01: StarFive manufacturer data format version              | 0x0001                             |
 |        |             | Ether  MAC    | 6           | xx-xx-xx-xx-xx-xx                                            | The red part is  variable          |
 |        |             | Reversed      | 2           | 0x0,  Reserved field                                         | 0x0000                             |
