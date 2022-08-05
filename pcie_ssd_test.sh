@@ -8,9 +8,10 @@ function readINI()
 }
 
 cfg_name=cfg.ini
-cfg_section=SD
+cfg_section=PCIE_SSD
+k_unit=1024
 
-echo "******************SD testing..."
+echo "******************PCIE SSD testing..."
 
 str_sddevice=$(readINI $cfg_name $cfg_section sddevice)
 sd_device=$(echo $str_sddevice | sed 's/\r//')
@@ -32,9 +33,9 @@ if [ -e "/dev/$sd_device" ]
 then
 
 	echo "time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt"
-	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee sd_test.log
+	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee pcie_ssd_test.log
 
-	str=$(sed -n '3p' sd_test.log)
+	str=$(sed -n '3p' pcie_ssd_test.log)
 	#echo "string: $str"
 	index=`expr index "$str" /`
 	#echo "index: $index"
@@ -51,18 +52,19 @@ then
 	#echo "result=$result"
 	if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 	then
-		echo "SD READ PASS"
-		echo "SD READ:        PASS  read speed: $rspeed" >> test_result.log
+		echo "PCIE SSD READ PASS"
+		echo "PCIE SSD READ:  PASS  read speed: $rspeed" >> test_result.log
 	else
-		echo "SD READ FAIL"
-		echo "SD READ:        FAIL  read speed: $rspeed" >> test_result.log
+		echo "PCIE SSD READ FAIL"
+		echo "PCIE SSD READ:  FAIL  read speed: $rspeed" >> test_result.log
 	fi
+
 
 	if false; then
 		echo "time dd if=/dev/zero of=/dev/$sd_device bs=$block_size count=$block_cnt"
-		time dd if=/dev/zero of=/dev/$sd_device bs=$block_size count=$block_cnt 2>&1 | tee sd_test.log
+		time dd if=/dev/zero of=/dev/$sd_device bs=$block_size count=$block_cnt 2>&1 | tee pcie_ssd_test.log
 
-		str=$(sed -n '3p' sd_test.log)
+		str=$(sed -n '3p' pcie_ssd_test.log)
 		#echo "string: $str"
 		index=`expr index "$str" /`
 		#echo "index: $index"
@@ -79,16 +81,17 @@ then
 		#echo "result=$result"
 		if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 		then
-			echo "SD WRITE PASS"
-			echo "SD WRITE:       PASS  write speed: $wspeed" >> test_result.log
+			echo "PCIE SSD WRITE PASS"
+			echo "PCIE SSD WRITE: PASS  write speed: $wspeed" >> test_result.log
 		else
-			echo "SD WRITE FAIL"
-			echo "SD WRITE:       FAIL  write speed: $wspeed" >> test_result.log
+			echo "PCIE SSD WRITE FAIL"
+			echo "PCIE SSD WRITE: FAIL  write speed: $wspeed" >> test_result.log
 		fi
 	fi
 
 else
-	echo "SD FAIL"
-	echo "SD:             FAIL" >> test_result.log
+	echo "PCIE SSD FAIL"
+	echo "PCIE SSD:       FAIL" >> test_result.log
 fi
+
 

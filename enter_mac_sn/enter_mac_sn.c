@@ -4,10 +4,10 @@
 #include <sys/ioctl.h>  
 #include <stdlib.h>  
 #include <fcntl.h>  
-#include <sys/io.h> 
+//#include <sys/io.h> 
 
-#define EEPROM_SIZE				256
-#define HEAD_REVISION			0x01
+#define EEPROM_SIZE				512
+#define HEAD_REVISION			0x02
 #define HEAD_ATOMS_NUM			2
 #define OFFSET_EEPLEN			8
 
@@ -18,8 +18,8 @@
 #define LEN_PRODUCT_STRING		0x20
 
 #define OVERTIME				5
-#define EEPROM_DEV "/sys/bus/i2c/drivers/at24/0-0050/eeprom"
-#define EEPROM_OFFSET	0x100
+#define EEPROM_DEV "/sys/bus/i2c/drivers/at24/5-0050/eeprom"
+#define EEPROM_OFFSET	0x0
 #define MAC_ADDR_LEN	17
 #define CRC16 0x8005
 
@@ -29,6 +29,12 @@ struct t_eeprom_header {
 	char reversed;
 	unsigned short numatoms;
 	unsigned int eeplen;
+};
+
+struct t_atom_header {
+	unsigned short type;
+	unsigned short count;
+	unsigned int dlen;
 };
 
 struct t_vendor_info {
@@ -43,22 +49,21 @@ struct t_vendor_info {
 
 struct t_custom_info {
 	unsigned short version;
+	char pcb_version;
+	char bom_version;
 	char ether_mac_0[6];
-	char reversed[2];
+	char ether_mac_1[6];
+	char reserved[2];
 };
 
 struct t_atom1_info {
-	unsigned short type;
-	unsigned short count;
-	unsigned int data_len;
+	struct t_atom_header atom_header;
 	struct t_vendor_info vendor_info;
 	unsigned short crc16;
 };
 
 struct t_atom4_info {
-	unsigned short type;
-	unsigned short count;
-	unsigned int data_len;
+	struct t_atom_header atom_header;
 	struct t_custom_info custom_info;
 	unsigned short crc16;
 };
@@ -167,7 +172,7 @@ static int check_mac_addr_invalid(char *mac, int len)
 	return mac_invalid;
 }
 
-static void scan_input_mac(char *dst)
+static void scan_input_mac(int index, char *dst)
 {
 	char mac[20];
 	int i = 0;
@@ -176,7 +181,11 @@ static void scan_input_mac(char *dst)
 	char **ppmac;
 
 	while(mac_invalid){
-		printf("Please enter ETH0 mac address: (xx-xx-xx-xx-xx-xx)\r\n");
+		if (index == 0)
+			printf("Please enter ETH0 mac address: (xx-xx-xx-xx-xx-xx)\r\n");
+		else
+			printf("Please enter ETH1 mac address: (xx-xx-xx-xx-xx-xx)\r\n");
+
 		scanf("%17s[^\n]", mac);
 
 		mac_invalid = check_mac_addr_invalid(mac, strlen(mac));
@@ -232,10 +241,10 @@ static int eeprom_write_data(char *data, int len)
 	unsigned char sum = 0;
 
 	fd = open(EEPROM_DEV, O_RDWR);  
-    if(fd < 0){  
-        printf("Open %s fail\n", EEPROM_DEV);  
-        return -1;  
-    } 
+	if(fd < 0){  
+		printf("Open %s fail\n", EEPROM_DEV);  
+		return -1;  
+	}
 
 	lseek(fd, EEPROM_OFFSET, SEEK_SET);
 
@@ -266,8 +275,10 @@ static int eeprom_write_data(char *data, int len)
 void main(void)
 {
 	int i=0;
-	unsigned char eth0_mac_addr[6] = {0};
-	unsigned char psn[LEN_PRODUCT_STRING] = {0};
+	char *use_default;
+	unsigned char eth0_mac_addr[6] = {0x6c, 0xcf, 0x39, 0x6c, 0xde, 0x12};
+	unsigned char eth1_mac_addr[6] = {0x6c, 0xcf, 0x39, 0x7c, 0xae, 0x13};
+	unsigned char psn[LEN_PRODUCT_STRING] = "VF7110A1-2228-D008E000-00000001\0";
 
 	struct t_eeprom_header *p_header = &g_eeprom_data.eeprom_header;
 	struct t_atom1_info *p_atom1_info = &g_eeprom_data.atom1_info;
@@ -275,8 +286,13 @@ void main(void)
 
 	memset(&g_eeprom_data, 0x0, sizeof(g_eeprom_data));
 
-	scan_input_mac(eth0_mac_addr);
-	scan_input_sn(psn);
+	printf("Use default value(y/n)?\r\n");
+        scanf("%1s", use_default);
+	if (strcmp(use_default, "y")) {
+		scan_input_mac(0, eth0_mac_addr);
+        	scan_input_mac(1, eth1_mac_addr);
+        	scan_input_sn(psn);
+	}
 
 	memcpy((void *)p_header->signature, (void *)signature, sizeof(p_header->signature));
 	
@@ -289,9 +305,9 @@ void main(void)
 	printf("atom1_info = %ld\r\n", sizeof(g_eeprom_data.atom1_info));
 	printf("atom4_info = %ld\r\n", sizeof(g_eeprom_data.atom4_info));
 
-	p_atom1_info->type = TYPE_VENDOR_INFO;
-	p_atom1_info->count = 1;
-	p_atom1_info->data_len = sizeof(p_atom1_info->vendor_info) + 2;
+	p_atom1_info->atom_header.type = TYPE_VENDOR_INFO;
+	p_atom1_info->atom_header.count = 1;
+	p_atom1_info->atom_header.dlen = sizeof(p_atom1_info->vendor_info) + 2;
 	memset(p_atom1_info->vendor_info.uuid, 0x0, sizeof(p_atom1_info->vendor_info.uuid));
 	p_atom1_info->vendor_info.pid = 0;
 	p_atom1_info->vendor_info.pver = 0;
@@ -301,11 +317,16 @@ void main(void)
 	memcpy(p_atom1_info->vendor_info.pstr, psn, sizeof(p_atom1_info->vendor_info.pstr));
 	p_atom1_info->crc16 = checksum_crc16((unsigned char *)p_atom1_info, sizeof(g_eeprom_data.atom1_info) - 2);
 	
-	p_atom4_info->type = TYPE_CUSTOM_DATA;
-	p_atom4_info->count = 0x02;
-	p_atom4_info->data_len = sizeof(p_atom4_info->custom_info) + 2;
-	p_atom4_info->custom_info.version = 0x01;
+	p_atom4_info->atom_header.type = TYPE_CUSTOM_DATA;
+	p_atom4_info->atom_header.count = 0x02;
+	p_atom4_info->atom_header.dlen = sizeof(p_atom4_info->custom_info) + 2;
+	p_atom4_info->custom_info.version = 0x02;
+	p_atom4_info->custom_info.pcb_version = 0x01;
+	p_atom4_info->custom_info.bom_version = 'A';
+	p_atom4_info->custom_info.reserved[0] = 0;
+	p_atom4_info->custom_info.reserved[1] = 0;
 	memcpy(p_atom4_info->custom_info.ether_mac_0, eth0_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_0));
+	memcpy(p_atom4_info->custom_info.ether_mac_1, eth1_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_1));
 	p_atom4_info->crc16 = checksum_crc16((unsigned char *)p_atom4_info, sizeof(g_eeprom_data.atom4_info) - 2);
 	
 	eeprom_write_data((unsigned char *)&g_eeprom_data, sizeof(g_eeprom_data));

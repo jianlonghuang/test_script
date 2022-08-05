@@ -9,8 +9,6 @@ function readINI()
 
 cfg_name=cfg.ini
 cfg_section=USB
-failcnt=0
-k_unit=1024
 
 str_usbcnt=$(readINI $cfg_name $cfg_section usbcnt)
 usb_cnt=$(echo $str_usbcnt | sed 's/\r//')
@@ -36,23 +34,13 @@ str_blocksize=$(readINI $cfg_name $cfg_section blocksize)
 block_size=$(echo $str_blocksize | sed 's/\r//')
 #echo $block_size
 
-k_index=`expr index "$str_blocksize" k`
-if [ $k_index -gt 1 ]
-then
-	k_index=`expr $k_index - 1`
-	int_block_size=${str_blocksize:0:$k_index}
-	int_block_size=`echo "$int_block_size*$k_unit" |bc`
-else
-	int_block_size=$block_size
-fi
-
 str_blockcnt=$(readINI $cfg_name $cfg_section blockcnt)
 block_cnt=$(echo $str_blockcnt | sed 's/\r//')
 #echo $block_cnt
 
-str_expectreadspeed=$(readINI $cfg_name $cfg_section expectreadspeed)
-expect_readspeed=$(echo $str_expectreadspeed | sed 's/\r//')
-#echo $expect_readspeed
+str_expectspeed=$(readINI $cfg_name $cfg_section expectspeed)
+expect_speed=$(echo $str_expectspeed | sed 's/\r//')
+#echo $expect_speed
 
 cnt=1
 
@@ -75,43 +63,71 @@ do
 		;;
 	esac
 	
-	echo "time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt"
-	time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee usb_test.log
-	
-	str=$(sed -n '4p' usb_test.log)
-	#echo "string: $str"
-	l_index=`expr index "$str" l`
-	m_index=`expr index "$str" m`
-	m_cnt=`expr $m_index - $l_index - 1`
-
-	min=${str:$l_index:$m_cnt}
-	#echo "min: $min"
-
-	s_index=`expr index "$str" s`
-	s_cnt=`expr $s_index - $m_index - 1`
-	sec=${str:$m_index:$s_cnt}
-	#echo "sec: $sec"
-
-	time=`echo "$min*60+$sec" |bc`
-	#echo "time: $time s"
-	
-	speed=$(echo "$int_block_size $block_cnt" | awk '{printf("%.2f",$1*$2)}')
-	speed=$(echo "$speed $time" |awk '{printf("%.2f",$1/$2)}')
-	speed=$(echo $speed $k_unit | awk '{printf("%.2f",$1/$2)}')
-	speed=$(echo $speed $k_unit | awk '{printf("%.2f",$1/$2)}')
-	echo "speed: $speed Mbit/s"
-
-	result=$(echo $speed $expect_readspeed | awk '{if($1>$2) {printf 1} else {printf 0}}')
-	#echo "result=$result"
-	if [[ $result = 1 ]] && [[ $sec != 0 ]]
+	if [ -e "/dev/$usb_device" ]
 	then
-		echo "USB$cnt PASS"
-		echo "USB$cnt:           PASS  speed: $speed Mbit/s" >> test_result.log
+
+		echo "time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt"
+		time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee usb_test.log
+		
+		str=$(sed -n '3p' usb_test.log)
+		#echo "string: $str"
+		index=`expr index "$str" /`
+		#echo "index: $index"
+		let comma_last_index=`echo "$str" | awk -F '','' '{printf "%d", length($0)-length($NF)}'`
+		#echo $comma_last_index
+		len=`expr $index - $comma_last_index - 4`
+		fspeed=${str:$comma_last_index+1:$len}
+		#echo "fspeed: $fspeed"
+		len=`expr $index - $comma_last_index`
+		rspeed=${str:$comma_last_index+1:$len}
+		echo "speed: $rspeed"
+
+		result=$(echo $fspeed $expect_speed | awk '{if($1>$2) {printf 1} else {printf 0}}')
+		#echo "result=$result"
+		if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
+		then
+			echo "USB$cnt READ PASS"
+			echo "USB$cnt READ:      PASS  read speed: $rspeed" >> test_result.log
+		else
+			echo "USB$cnt READ FAIL"
+			echo "USB$cnt READ:      FAIL  read speed: $rspeed" >> test_result.log
+		fi
+		
+
+		if false; then
+			echo "time dd if=/dev/zero of=/dev/$usb_device bs=$block_size count=$block_cnt"
+			time dd if=/dev/zero of=/dev/$usb_device bs=$block_size count=$block_cnt 2>&1 | tee usb_test.log
+
+			str=$(sed -n '3p' usb_test.log)
+			#echo "string: $str"
+			index=`expr index "$str" /`
+			#echo "index: $index"
+			let comma_last_index=`echo "$str" | awk -F '','' '{printf "%d", length($0)-length($NF)}'`
+			#echo $comma_last_index
+			len=`expr $index - $comma_last_index - 4`
+			fspeed=${str:$comma_last_index+1:$len}
+			#echo "fspeed: $fspeed"
+			len=`expr $index - $comma_last_index`
+			wspeed=${str:$comma_last_index+1:$len}
+			echo "speed: $wspeed"
+				
+			result=$(echo $fspeed $expect_speed | awk '{if($1>$2) {printf 1} else {printf 0}}')
+			#echo "result=$result"
+			if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
+			then
+				echo "USB$cnt WRITE PASS"
+				echo "USB$cnt WRITE:     PASS  write speed: $wspeed" >> test_result.log
+			else
+				echo "USB$cnt WRITE FAIL"
+				echo "USB$cnt WRITE:     FAIL  write speed: $wspeed" >> test_result.log
+			fi
+		fi
+
 	else
 		echo "USB$cnt FAIL"
-		echo "USB$cnt:           FAIL  speed: $speed Mbit/s" >> test_result.log
+		echo "USB$cnt:           FAIL" >> test_result.log
 	fi
-	
+
 	let cnt++
 done
 

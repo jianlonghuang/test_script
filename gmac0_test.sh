@@ -8,7 +8,7 @@ function readINI()
 }
 
 cfg_name=cfg.ini
-cfg_section=ETHERNET
+cfg_section=GMAC0
 failcnt=0
 
 str_boardip=$(readINI $cfg_name $cfg_section boardip)
@@ -28,10 +28,11 @@ expect_baudtcp=$(echo $str_expectbaudtcp | sed 's/\r//')
 #echo $expect_baudtcp
 
 echo "******************ETH0 PING testing..."
+#ifconfig eth1 down
 ifconfig eth0 $board_ip netmask 255.255.255.0
 ping_over=0
 echo "ping $vm_ip -w 5"
-ping $vm_ip -w 5 2>&1 | tee ethernet_test.log
+ping $vm_ip -w 5 -I eth0 2>&1 | tee gmac0_test.log
 
 while read line
 do
@@ -42,7 +43,7 @@ do
 		echo "ping_over: $ping_over"
 		break
 	fi
-done < ethernet_test.log
+done < gmac0_test.log
 
 if [[ $ping_over != 0 ]]
 then
@@ -54,9 +55,9 @@ else
 fi
 
 echo "******************ETH0 TCP TX testing..."
-iperf3 -c $vm_ip -b $sbaud 2>&1 | tee ethernet_test.log
+iperf3 -c $vm_ip -b $sbaud -t 5 -B $board_ip 2>&1 | tee gmac0_test.log
 
-str=$(sed -n '16p' ethernet_test.log)
+str=$(sed -n '11p' gmac0_test.log)
 #echo "string: $str"
 index=`expr index "$str" /`
 #echo "index: $index"
@@ -77,9 +78,9 @@ else
 fi
 
 echo "******************ETH0 TCP RX testing..."
-iperf3 -c $vm_ip -b $sbaud -R 2>&1 | tee ethernet_test.log
+iperf3 -c $vm_ip -b $sbaud -t 5 -R -B $board_ip 2>&1 | tee gmac0_test.log
 
-str=$(sed -n '18p' ethernet_test.log)
+str=$(sed -n '13p' gmac0_test.log)
 #echo "string: $str"
 index=`expr index "$str" /`
 #echo "index: $index"

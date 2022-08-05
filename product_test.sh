@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "************************************************"
-echo "******************Product Test******************"
+echo "****************VF2 Product Test****************"
 echo "************************************************"
 
 starttime=$(date +%s)
@@ -16,7 +16,6 @@ function readINI()
  RESULT=`awk -F '=' '/\['$SECTION'\]/{a=1}a==1&&$1~/'$KEY'/{print $2;exit}' $FILENAME`
  echo $RESULT
 }
-
 
 cfg_section=USB
 str_testitem=$(readINI $cfg_name $cfg_section enable)
@@ -38,36 +37,86 @@ then
 	sd_pid=${!}
 fi
 
-cfg_section=ETHERNET
+cfg_section=EMMC
 str_testitem=$(readINI $cfg_name $cfg_section enable)
 test_item=$(echo $str_testitem | sed 's/\r//')
-ethernet_pid=0
+emmc_pid=0
 if [[ "$test_item" = "y" ]]
 then
-	sh ethernet_test.sh &
-	ethernet_pid=${!}
+	sh emmc_test.sh &
+	emmc_pid=${!}
+fi
+
+cfg_section=PCIE_SSD
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+pcie_ssd_pid=0
+if [[ "$test_item" = "y" ]]
+then
+	sh pcie_ssd_test.sh &
+	pcie_ssd_pid=${!}
+fi
+
+cfg_section=GMAC0
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+gmac0_pid=0
+if [[ "$test_item" = "y" ]]
+then
+	#gmac0 gmac1 serial excute
+	sh gmac0_test.sh
+	gmac0_pid=${!}
 fi
 
 
-cfg_section=BLUETOOTH
+cfg_section=GMAC1
 str_testitem=$(readINI $cfg_name $cfg_section enable)
 test_item=$(echo $str_testitem | sed 's/\r//')
-bluetooth_pid=0
+gmac1_pid=0
 if [[ "$test_item" = "y" ]]
 then
-	sh bluetooth.sh &
-	bluetooth_pid=${!}
+	sh gmac1_test.sh
+	gmac1_pid=${!}
 fi
 
-
-cfg_section=WLAN
+cfg_section=HDMI
 str_testitem=$(readINI $cfg_name $cfg_section enable)
 test_item=$(echo $str_testitem | sed 's/\r//')
-wifi_pid=0
+hdmi_pid=0
 if [[ "$test_item" = "y" ]]
 then
-	sh wifi_test.sh &
-	wifi_pid=${!}
+	sh hdmi_test.sh
+	hdmi_pid=${!}
+fi
+
+cfg_section=PWMDAC
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+pwmdac_pid=0
+if [[ "$test_item" = "y" ]]
+then
+	sh pwmdac_test.sh
+	pwmdac_pid=${!}
+fi
+
+cfg_section=CSI
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+csi_pid=0
+if [[ "$test_item" = "y" ]]
+then
+	sh mipi_csi_test.sh
+	csi_pid=${!}
+fi
+
+cfg_section=DSI
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+dsi_pid=0
+if [[ "$test_item" = "y" ]]
+then
+	sh mipi_dsi_test.sh
+	dsi_pid=${!}
 fi
 
 if [[ $usb_pid != 0 ]]
@@ -80,30 +129,45 @@ then
 	wait ${sd_pid}
 fi
 
-if [[ $ethernet_pid != 0 ]]
+if [[ $gmac0_pid != 0 ]]
 then
-	wait ${ethernet_pid}
+	wait ${gmac0_pid}
 fi
 
-if [[ $bluetooth_pid != 0 ]]
+if [[ $gmac1_pid != 0 ]]
 then
-	wait ${bluetooth_pid}
+	wait ${gmac1_pid}
 fi
 
-if [[ $wifi_pid != 0 ]]
+if [[ $emmc_pid != 0 ]]
 then
-	wait ${wifi_pid}
+	wait ${emmc_pid}
 fi
 
-cfg_section=HDMI_PWMADC
-str_testitem=$(readINI $cfg_name $cfg_section enable)
-test_item=$(echo $str_testitem | sed 's/\r//')
-
-if [ "$test_item" = "y" ]
+if [[ $pcie_ssd_pid != 0 ]]
 then
-	sh hdmi_pwmadc_test.sh
+	wait ${pcie_ssd_pid}
 fi
 
+if [[ $hdmi_pid != 0 ]]
+then
+	wait ${hdmi_pid}
+fi
+
+if [[ $pwmdac_pid != 0 ]]
+then
+	wait ${pwmdac_pid}
+fi
+
+if [[ $csi_pid != 0 ]]
+then
+	wait ${csi_pid}
+fi
+
+if [[ $dsi_pid != 0 ]]
+then
+	wait ${dsi_pid}
+fi
 endtime=$(date +%s)
 runmin=$(($endtime-$starttime))
 echo "running time: $runmin s"

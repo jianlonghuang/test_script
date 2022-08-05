@@ -8,9 +8,9 @@ function readINI()
 }
 
 cfg_name=cfg.ini
-cfg_section=SD
+cfg_section=EMMC
 
-echo "******************SD testing..."
+echo "******************EMMC testing..."
 
 str_sddevice=$(readINI $cfg_name $cfg_section sddevice)
 sd_device=$(echo $str_sddevice | sed 's/\r//')
@@ -32,9 +32,9 @@ if [ -e "/dev/$sd_device" ]
 then
 
 	echo "time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt"
-	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee sd_test.log
+	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee emmc_test.log
 
-	str=$(sed -n '3p' sd_test.log)
+	str=$(sed -n '3p' emmc_test.log)
 	#echo "string: $str"
 	index=`expr index "$str" /`
 	#echo "index: $index"
@@ -47,22 +47,23 @@ then
 	rspeed=${str:$comma_last_index+1:$len}
 	echo "speed: $rspeed"
 		
-	result=$(echo $fspeed $expect_speed | awk '{if($1>$2) {printf 1} else {printf 0}}')
+	result=$(echo $rspeed $expect_speed | awk '{if($1>$2) {printf 1} else {printf 0}}')
 	#echo "result=$result"
 	if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 	then
-		echo "SD READ PASS"
-		echo "SD READ:        PASS  read speed: $rspeed" >> test_result.log
+		echo "EMCC READ PASS"
+		echo "EMCC READ:      PASS  read speed: $rspeed" >> test_result.log
 	else
-		echo "SD READ FAIL"
-		echo "SD READ:        FAIL  read speed: $rspeed" >> test_result.log
+		echo "EMCC READ FAIL"
+		echo "EMCC READ:      FAIL  read speed: $rspeed" >> test_result.log
 	fi
+
 
 	if false; then
 		echo "time dd if=/dev/zero of=/dev/$sd_device bs=$block_size count=$block_cnt"
-		time dd if=/dev/zero of=/dev/$sd_device bs=$block_size count=$block_cnt 2>&1 | tee sd_test.log
+		time dd if=/dev/zero of=/dev/$sd_device bs=$block_size count=$block_cnt 2>&1 | tee emmc_test.log
 
-		str=$(sed -n '3p' sd_test.log)
+		str=$(sed -n '3p' emmc_test.log)
 		#echo "string: $str"
 		index=`expr index "$str" /`
 		#echo "index: $index"
@@ -79,16 +80,16 @@ then
 		#echo "result=$result"
 		if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 		then
-			echo "SD WRITE PASS"
-			echo "SD WRITE:       PASS  write speed: $wspeed" >> test_result.log
+			echo "EMCC WRITE PASS"
+			echo "EMCC WRITE:     PASS  write speed: $wspeed" >> test_result.log
 		else
-			echo "SD WRITE FAIL"
-			echo "SD WRITE:       FAIL  write speed: $wspeed" >> test_result.log
+			echo "EMCC WRITE FAIL"
+			echo "EMCC WRITE:     FAIL  write speed: $wspeed" >> test_result.log
 		fi
 	fi
 
 else
-	echo "SD FAIL"
-	echo "SD:             FAIL" >> test_result.log
+	echo "EMCC FAIL"
+	echo "EMCC:           FAIL" >> test_result.log
 fi
 
