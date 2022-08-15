@@ -9,6 +9,14 @@ function readINI()
 
 cfg_name=cfg.ini
 cfg_section=EMMC
+log_suffix=".log"
+log_file=$cfg_section$log_suffix
+if [ -f $log_file ]
+then
+	rm $log_file
+fi
+
+starttime=$(date +%s)
 
 echo "******************EMMC testing..."
 
@@ -53,9 +61,11 @@ then
 	then
 		echo "EMCC READ PASS"
 		echo "EMCC READ:      PASS  read speed: $rspeed" >> test_result.log
+		echo "PASS: speed=$rspeed" > $log_file
 	else
 		echo "EMCC READ FAIL"
 		echo "EMCC READ:      FAIL  read speed: $rspeed" >> test_result.log
+		echo "FAIL: SPEED SLOW=$rspeed" > $log_file
 	fi
 
 
@@ -91,5 +101,13 @@ then
 else
 	echo "EMCC FAIL"
 	echo "EMCC:           FAIL" >> test_result.log
+	echo "FAIL: NO EMMC DEVICE" > $log_file
 fi
+
+endtime=$(date +%s)
+runtime=$(($endtime-$starttime))
+runtime=$(echo "$runtime*1000" | bc)
+echo "$cfg_section running time: $runtime ms"
+echo $runtime >> $log_file
+
 

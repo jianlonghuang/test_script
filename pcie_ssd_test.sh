@@ -10,6 +10,15 @@ function readINI()
 cfg_name=cfg.ini
 cfg_section=PCIE_SSD
 k_unit=1024
+log_suffix=".log"
+log_file=$cfg_section$log_suffix
+#echo $log_file
+if [ -f $log_file ]
+then
+	rm $log_file
+fi
+
+starttime=$(date +%s)
 
 echo "******************PCIE SSD testing..."
 
@@ -54,9 +63,11 @@ then
 	then
 		echo "PCIE SSD READ PASS"
 		echo "PCIE SSD READ:  PASS  read speed: $rspeed" >> test_result.log
+		echo "PASS: speed=$rspeed" > $log_file
 	else
 		echo "PCIE SSD READ FAIL"
 		echo "PCIE SSD READ:  FAIL  read speed: $rspeed" >> test_result.log
+		echo "FAIL: SPEED SLOW=$rspeed" > $log_file
 	fi
 
 
@@ -92,6 +103,13 @@ then
 else
 	echo "PCIE SSD FAIL"
 	echo "PCIE SSD:       FAIL" >> test_result.log
+	echo "FAIL: NO PCIE SSD DEVICE" > $log_file
 fi
+
+endtime=$(date +%s)
+runtime=$(($endtime-$starttime))
+runtime=$(echo "$runtime*1000" | bc)
+echo "$cfg_section running time: $runtime ms"
+echo $runtime >> $log_file
 
 

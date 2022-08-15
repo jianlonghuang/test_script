@@ -1,19 +1,29 @@
 #!/bin/bash
 
 
-echo "******************MIPI DSI testing..."
 
-echo "modetest -M starfive -D 0 -a -s 118@35:800x480 -P 74@35:800x480@RG16 -Ftiles"
-modetest -M starfive -D 0 -a -s 118@35:800x480 -P 74@35:800x480@RG16 -Ftiles
-
-read -p "please enter MIPI DSI TEST OK(y/n?): " dsi_test_result
-
-if [[ "$dsi_test_result" == "y" ]]
+cfg_section=DSI
+log_suffix=".log"
+log_file=$cfg_section$log_suffix
+#echo $log_file
+if [ -f $log_file ]
 then
-	echo "MIPI DSI   PASS"
-	echo "MIPI DSI:       PASS" >> test_result.log
-else
-	echo "MIPI DSI   FAIL"
-	echo "MIPI DSI:       FAIL" >> test_result.log
+	rm $log_file
 fi
+
+starttime=$(date +%s)
+
+while true
+do
+	if [ -f $log_file ]
+	then
+		endtime=$(date +%s)
+		runtime=$(($endtime-$starttime))
+		runtime=$(echo "$runtime*1000" | bc)
+		echo "$cfg_section running time: $runtime ms"
+		echo $runtime >> $log_file
+		break
+	fi
+done
+
 

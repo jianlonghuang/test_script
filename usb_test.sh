@@ -9,6 +9,15 @@ function readINI()
 
 cfg_name=cfg.ini
 cfg_section=USB
+log_suffix=".log"
+log_file=$cfg_section$log_suffix
+#echo $log_file
+if [ -f $log_file ]
+then
+	rm $log_file
+fi
+
+starttime=$(date +%s)
 
 str_usbcnt=$(readINI $cfg_name $cfg_section usbcnt)
 usb_cnt=$(echo $str_usbcnt | sed 's/\r//')
@@ -43,6 +52,8 @@ expect_speed=$(echo $str_expectspeed | sed 's/\r//')
 #echo $expect_speed
 
 cnt=1
+passcnt=0
+result_des=""
 
 while [ $cnt -le $usb_cnt ]
 do
@@ -86,11 +97,14 @@ do
 		#echo "result=$result"
 		if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 		then
+			let passcnt++
+			result_des=$result_des$cfg_section$cnt": PASS "$rspeed","
 			echo "USB$cnt READ PASS"
 			echo "USB$cnt READ:      PASS  read speed: $rspeed" >> test_result.log
 		else
 			echo "USB$cnt READ FAIL"
 			echo "USB$cnt READ:      FAIL  read speed: $rspeed" >> test_result.log
+			result_des=$result_des$cfg_section$cnt": FAIL "$rspeed","
 		fi
 		
 
@@ -126,10 +140,25 @@ do
 	else
 		echo "USB$cnt FAIL"
 		echo "USB$cnt:           FAIL" >> test_result.log
+		result_des=$result_des$cfg_section$cnt":NO DEVICE,"
 	fi
 
 	let cnt++
 done
+
+
+if [ "$passcnt" = "$usb_cnt" ]
+then
+	echo "PASS: $result_des" > $log_file
+else
+	echo "FAIL: $result_des" > $log_file
+fi
+	
+endtime=$(date +%s)
+runtime=$(($endtime-$starttime))
+runtime=$(echo "$runtime*1000" | bc)
+echo "$cfg_section running time: $runtime ms"
+echo $runtime >> $log_file
 
 
 

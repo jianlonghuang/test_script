@@ -17,6 +17,16 @@ function readINI()
  echo $RESULT
 }
 
+cfg_section=GPIO
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+gpio_pid=0
+if [[ "$test_item" = "y" ]]
+then
+	sh gpio_test.sh &
+	gpio_pid=${!}
+fi
+
 cfg_section=USB
 str_testitem=$(readINI $cfg_name $cfg_section enable)
 test_item=$(echo $str_testitem | sed 's/\r//')
@@ -117,6 +127,11 @@ if [[ "$test_item" = "y" ]]
 then
 	sh mipi_dsi_test.sh
 	dsi_pid=${!}
+fi
+
+if [[ $gpio_pid != 0 ]]
+then
+	wait ${gpio_pid}
 fi
 
 if [[ $usb_pid != 0 ]]
