@@ -98,13 +98,13 @@ do
 		if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 		then
 			let passcnt++
-			result_des=$result_des$cfg_section$cnt": PASS "$rspeed","
+			result_des=$result_des$cfg_section$cnt": OK "$rspeed"; "
 			echo "USB$cnt READ PASS"
 			echo "USB$cnt READ:      PASS  read speed: $rspeed" >> test_result.log
 		else
 			echo "USB$cnt READ FAIL"
 			echo "USB$cnt READ:      FAIL  read speed: $rspeed" >> test_result.log
-			result_des=$result_des$cfg_section$cnt": FAIL "$rspeed","
+			result_des=$result_des$cfg_section$cnt": FAIL "$rspeed"; "
 		fi
 		
 
@@ -140,7 +140,7 @@ do
 	else
 		echo "USB$cnt FAIL"
 		echo "USB$cnt:           FAIL" >> test_result.log
-		result_des=$result_des$cfg_section$cnt":NO DEVICE,"
+		result_des=$result_des$cfg_section$cnt":NO DEVICE; "
 	fi
 
 	let cnt++

@@ -93,7 +93,7 @@ do
 		echo "gpio$pinnum1 test pass"
 	else
 		echo "gpio$pinnum1 test fail"
-		des_tmp=gpio$pinnum1,
+		des_tmp="gpio"$pinnum1"; "
 		result_des=$result_des$des_tmp
 	fi
 
@@ -144,7 +144,7 @@ do
 		echo "gpio$pinnum2 test pass"
 	else
 		echo "gpio$pinnum2 test fail"
-		des_tmp=gpio$pinnum2,
+		des_tmp="gpio"$pinnum2"; "
 		result_des=$result_des$des_tmp
 	fi
 done

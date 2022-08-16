@@ -33,11 +33,11 @@ do
 		runtime=$(echo "$runtime*1000" | bc)
 		echo "$cfg_section running time: $runtime ms"
 		echo $runtime >> $log_file
-		#result=`ps | grep "v4l2test" | grep -v "grep"`
-		#if [ "$result" != "" ]
-		#then
-			#killall v4l2test
-		#fi
+		result=`ps | grep "v4l2test" | grep -v "grep"`
+		if [ "$result" != "" ]
+		then
+			killall v4l2test
+		fi
 		break
 	fi
 done

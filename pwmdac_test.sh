@@ -15,7 +15,7 @@ starttime=$(date +%s)
 echo "******************PWMADC testing..."
 
 echo "aplay -Dhw:0,0 audio8k16S.wav"
-aplay -Dhw:0,0 audio8k16S.wav &
+#aplay -Dhw:0,0 audio.wav &
 
 
 while true
@@ -31,7 +31,7 @@ do
 		result=`ps | grep "aplay" | grep -v "grep"`
 		if [ "$result" != "" ]
 		then
-			killall v4l2test
+			killall aplay
 		fi
 		break
 	fi

@@ -17,16 +17,20 @@ log_suffix=".log"
 cfg_name=cfg.ini
 test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
 test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh")
-test_parallel_list=(1 1 1 1 1 1 1 1 1 1 0)
+test_parallel_list=(1 1 1 1 1 1 1 1 1 0 0)
 test_auto_list=(1 1 1 1 1 1 1 0 0 0 0)
 
 test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
 test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh")
-test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 1 0)
+test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 0 0)
 test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0)
 test_over_list=(0 0 0 0 0 0 0 0 0 0 0)
 test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0)
 test_over_cnt=0
+heart_flag=0
+heart_log=heart.log
+
+month=(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
 
 test_enable_num=${#test_enable_list[@]}
 
@@ -63,19 +67,98 @@ function set_date()
 
 function heart()
 {
-	time=`date +%Y-%m-%d" "%H:%M:%S`
-	#echo $time
-	frame={@$fun_3_heart,$time}
-	send_data $frame
+	send_flag=$1
+
+	while true
+	do
+		time=`date +%Y-%m-%d" "%H:%M:%S`
+		heart_frame={@$fun_3_heart,$time}
+		if [ "$send_flag" = "1" ]
+		then
+			send_data $heart_frame
+		fi
+		echo "1" > $heart_log
+		echo $heart_frame >> $heart_log
+		sleep 1
+	done
 }
 
+function heart_burning()
+{
+	if [ -f "heart.log" ]
+	then
+		line=$(sed -n '1p' $heart_log)
+		if [ "$line" = "1" ]
+		then
+			line=$(sed -n '2p' $heart_log)
+			send_data $line
+			cat /dev/null > $heart_log
+		fi
+	fi
+}
+
+function module_info()
+{
+	eth0_mac=`cat /sys/class/net/eth0/address`
+	echo "eth0_mac: $eth0_mac"
+	eth1_mac=`cat /sys/class/net/eth1/address`
+	echo "eth1_mac: $eth1_mac"
+	pn="VF7110A1-2228-D008E000-00000001"
+	sn="StarFive Technology Co. Ltd."
+
+	module_frame="{@5,#0,"$pn,$sn,$eth0_mac,$eth1_mac$str_tail
+	echo "module_frame: $module_frame"
+	send_data $module_frame
+}
+
+function get_version_date()
+{
+	version_data=$*
+	date_day=1
+	date_month=1
+	date_year=2022
+
+	for ((i=0;i<12;i++))
+	do
+		result=$(echo $version_data | grep "${month[$i]}")
+		if [[ "$result" != "" ]]
+		then
+			date_month=i
+			let date_month++
+		fi
+	done
+
+	result=$(echo $version_data | grep "CST")
+	if [[ "$result" != "" ]]
+	then
+		array_date=($result)
+		count=0
+		for var in ${array_date[@]}
+		do
+			let count++
+		done
+	fi
+	
+	if [ $count -gt 4 ]
+	then
+		year_index=`expr $count - 1`
+		day_index=`expr $count - 4`
+		date_year=${array_date[$year_index]}
+		date_day=${array_date[$day_index]}
+	fi
+	
+	str_date=$date_year"-"$date_month"-"$date_day
+	echo $str_date
+	
+}
 
 function test_init()
 {
-	vesion_date="2022-08-12"
 	version_mds="7aa73a5c05a44a053baa7508f4bcdfc0"
 	version > version.log
 
+	line=$(sed -n '1p' version.log)
+	vesion_date=$(get_version_date $line)
 	line=$(sed -n '2p' version.log)
 	#echo $line
 	result=$(echo $line | grep "VF2_51")
@@ -194,15 +277,6 @@ function recv_data()
 	cat $uart_dev >> $uart_recv_data &
 	info=$(get_recv_file_info)
 	echo $info
-}
-
-function killmodetest()
-{
-	result=`ps | grep "modetest" | grep -v "grep"`
-	if [ "$result" != "" ]
-	then
-		killall modetest
-	fi
 }
 
 function send_frame()
@@ -358,17 +432,41 @@ function test_result_upload()
 	done
 }
 
+function get_dsi_result()
+{
+	starttime=$(date +%s)
+	while true
+	do
+		endtime=$(date +%s)
+		runtime=$(($endtime-$starttime))
+		if [ $runtime -gt 6 ]
+		then
+			echo -ne "\n"
+			break
+		fi
+	done
+}
+
 function dsi_process()
 {
-	sh killmodetest.sh &
-	sh dsi_init.sh
-	dsi_test_num=$(get_test_item_num "DSI")
-	echo "dsi_test_num: $dsi_test_num"
-	if [[ $dsi_test_num -lt $test_enable_num ]] && [[  ${test_enable_parallel_list[$dsi_test_num]} = "0" ]]
+	test_num=$(get_test_item_num "DSI")
+	echo "dsi_test_num: $test_num"
+	if [[ $test_num -lt $test_enable_num ]] && [[  ${test_enable_parallel_list[$test_num]} = "0" ]]
 	then
-		test_enable_parallel_list[$dsi_test_num]=1
-		echo "sh ${test_enable_fun_list[$dsi_test_num]}"
-		sh ${test_enable_fun_list[$dsi_test_num]} &
+		get_dsi_result | modetest -M starfive -a -s 116@31:1920x1080 -s 118@35:800x480 -P 39@31:1920x1080 -P 74@35:800x480 -F tiles,tiles
+
+		test_enable_parallel_list[$test_num]=1
+	fi
+}
+
+function pwmdac_process()
+{
+	test_num=$(get_test_item_num "PWMDAC")
+	echo "PWMDAC_test_num: $test_num"
+	if [[ $test_num -lt $test_enable_num ]] && [[  ${test_enable_parallel_list[$test_num]} = "0" ]]
+	then
+		test_enable_parallel_list[$test_num]=1
+		aplay -Dhw:0,0 audio.wav
 	fi
 }
 
@@ -392,6 +490,7 @@ function all_test_over()
 			waite_count=0
 			echo "all test over"
 			killall cat
+			kill $heart_pid
 			exit
 		fi
 		
@@ -403,14 +502,22 @@ set_date
 uart3_init
 uart3_open
 
+module_info
+
+heart 1 &
+heart_pid=$!
+
 test_init
 test_list_init
-
+old_info=$(recv_data)
+pwmdac_process
 dsi_process
 test_process
 
-old_info=$(recv_data)
 
+kill $heart_pid
+heart 0 &
+heart_pid=$!
 
 while true
 do
@@ -419,15 +526,10 @@ do
 	
 	test_result_upload
 
-	let ms_count++
-	if [ $ms_count -gt 50 ]
-	then
-		ms_count=0
-		heart
-	fi
-
-	msleep 10
+	heart_burning
 
 	all_test_over
+
+	msleep 10
 	
 done
