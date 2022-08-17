@@ -2,117 +2,204 @@
 
 [GMAC0]
 
-enable=y								#y: test; n: not test
+enable=y                               #y: test; n: not test
 
-boardip=192.168.1.11		#visionfive IP
+boardip=192.168.1.11                   #visionfive IP
 
-vmip=192.168.1.101			#VM/PC IP
+vmip=192.168.1.101                     #VM/PC IP
 
-baud=1000M						#speed: 100M, 1000M, 10M
+baud=1000M                             #speed: 100M, 1000M, 10M
 
-expectbaudtcp=900			#expect TCP speed(Mbit/s), to judge the test results
+expectbaudtcp=900                      #expect TCP speed(Mbit/s), to judge the test results
 
 
 
 [GMAC1]
 
-enable=y
+enable=y                               #y: test; n: not test
 
-boardip=192.168.1.22		#y: test; n: not test
+boardip=192.168.1.22                   #visionfive IP
 
-vmip=192.168.1.101			#visionfive IP
+vmip=192.168.1.101                     #VM/PC IP
 
-baud=1000M						#speed: 100M, 1000M, 10M
+baud=1000M                             #speed: 100M, 1000M, 10M
 
-expectbaudtcp=900			#expect TCP speed(Mbit/s), to judge the test results
+expectbaudtcp=900                      #expect TCP speed(Mbit/s), to judge the test results
 
 
 
 [USB]
 
-enable=y		#y: test; n: not test
+enable=y                               #y: test; n: not test
 
-usbcnt=4		#USB interface counts, max: 4
+usbcnt=4                               #USB interface counts, max: 4
 
-usb1device=sda1		#usb device1 name
+usb1device=sda1                        #usb device1 name
 
-usb2device=sdb1		#usb device2 name
+usb2device=sdb1                        #usb device2 name
 
-usb3device=sdc1		#usb device3 name
+usb3device=sdc1                        #usb device3 name
 
-usb4device=sdd1		#usb device4 name
+usb4device=sdd1                        #usb device4 name
 
-blocksize=512k		#blocksize to read
+blocksize=512k                         #blocksize to read
 
-blockcnt=500		#block count to read
+blockcnt=500                           #block count to read
 
-expectspeed=20		#expect USB read speed(Mbit/s), to judge the test results
+expectspeed=20                         #expect USB read speed(Mbit/s), to judge the test results
 
 
 
 [SD]
 
-enable=y		#y: test; n: not test
+enable=y                               #y: test; n: not test
 
-sddevice=mmcblk1p3	#sd name
+sddevice=mmcblk1p3                     #sd name
 
-blocksize=512k		#blocksize to read
+blocksize=512k                         #blocksize to read
 
-blockcnt=100		#block count to read
+blockcnt=100                           #block count to read
 
-expectspeed=7		#expect read speed(Mbit/s), to judge the test results
+expectspeed=7                          #expect read speed(Mbit/s), to judge the test results
 
 
 
 [EMMC]
 
-enable=y		#y: test; n: not test
+enable=y                               #y: test; n: not test
 
-sddevice=mmcblk0p1	#emmc name
+sddevice=mmcblk0p1                     #emmc name
 
-blocksize=512k		#blocksize to read
+blocksize=512k                         #blocksize to read
 
-blockcnt=500		#block count to read
+blockcnt=500                           #block count to read
 
-expectspeed=50		#expect read speed(Mbit/s), to judge the test results
+expectspeed=50                         #expect read speed(Mbit/s), to judge the test results
 
 
 
 [PCIE_SSD]
 
-enable=y		#y: test; n: not test
+enable=y                               #y: test; n: not test
 
-sddevice=nvme0n1	#ssd name
+sddevice=nvme0n1                       #ssd name
 
-blocksize=512k		#blocksize to read
+blocksize=512k                         #blocksize to read
 
-blockcnt=5000		#block count to read
+blockcnt=5000                          #block count to read
 
-expectspeed=200		#expect read speed(Mbit/s), to judge the test results
+expectspeed=200                        #expect read speed(Mbit/s), to judge the test results
 
 
 
 [HDMI]
 
-enable=y		#y: test; n: not test
+enable=y                               #y: test; n: not test
 
 
 
 [CSI]
 
-enable=y
+enable=y                               #y: test; n: not test
 
 
 
 [PWMDAC]
 
-enable=y		#y: test; n: not test
+enable=y                               #y: test; n: not test
 
 
 
 [DSI]
 
-enable=n		#y: test; n: not test
+enable=n                               #y: test; n: not test
+
+
+
+[GPIO]
+
+enable=y                               #y: test; n: not test
+
+pins1=58,57                            #2 pin num
+
+pins2=55,42
+
+pins3=43,47
+
+pins4=52,53
+
+pins5=48,45
+
+pins6=37,39
+
+pins7=59,44
+
+pins8=38,54
+
+pins9=51,50
+
+pins10=49,56
+
+pins11=62,46
+
+pins12=36,61
+
+pins13=null
+
+
+
+# Hardware Link
+
+1. If enable to test USB, make sure plug the U disk first;
+
+2. If enable to test SD, make sure plug the tf card to slot first;
+
+3. If enable to test EMMC, make sure plug the emmc to slot first;
+
+4. If enable to test SSD, make sure plug the ssd to pcie slot first;
+
+5. If enable to test ETH0/1, make sure ETH0/1 connect to PC/VM through a network cable, the PC/VM IP and ETH0/1 IP are on the same network segment;
+
+6. If enable to test HDMI/DSI, make sure connect to HDMI/MIPI DSI display first;
+
+7. If enable to test PWMDAC, make sure connect to earphone first:
+
+8. If enable to test CSI, make sure connect to imx219 sensor first;
+
+9. If enable to test GPIO, make sure connect two pins as configure file, for example:
+
+   pins1=58,57 means short circuit GPIO58 and GPIO57
+
+**Most important:**
+
+**Two USB to Serial Converters are needed, one for the terminal and the other to communicate with the PC.**
+
+**Pin Num 8,10 for the terminal**
+
+**Pin Num 35, 37 for the communicate**
+
+|     Pin Name     | Pin Num | Pin Num |     Pin Name     |
+| :--------------: | :-----: | :-----: | :--------------: |
+|      +3.3V       |    1    |    2    |       +5V        |
+|      GPIO58      |    3    |    4    |       +5V        |
+|      GPIO57      |    5    |    6    |       GND        |
+|      GPIO55      |    7    |    8    | GPIO41 (UART TX) |
+|       GND        |    9    |   10    | GPIO40 (UART RX) |
+|      GPIO42      |   11    |   12    |      GPIO38      |
+|      GPIO43      |   13    |   14    |       GND        |
+|      GPIO47      |   15    |   16    |      GPIO54      |
+|      +3.3V       |   17    |   18    |      GPIO51      |
+|      GPIO52      |   19    |   20    |       GND        |
+|      GPIO53      |   21    |   22    |      GPIO50      |
+|      GPIO48      |   23    |   24    |      GPIO49      |
+|       GND        |   25    |   26    |      GPIO56      |
+|      GPIO45      |   27    |   28    |      GPIO40      |
+|      GPIO37      |   29    |   30    |       GND        |
+|      GPIO39      |   31    |   32    |      GPIO46      |
+|      GPIO59      |   33    |   34    |       GND        |
+| GPIO63 (UART RX) |   35    |   36    |      GPIO36      |
+| GPIO60 (UART TX) |   37    |   38    |      GPIO61      |
+|       GND        |   39    |   40    |      GPIO44      |
 
 
 
@@ -120,6 +207,8 @@ enable=n		#y: test; n: not test
 # Run
 
 1. Modify the configure file **cfg.ini** as required
+
+   
 
 2. Copy the folder **test_script** to board catalogue **/**
 
@@ -139,65 +228,24 @@ enable=n		#y: test; n: not test
 3. Plug the tf card to slot,  power on, execute the command to run test script
 
    ```
-   cd /test_script && chmod 777 * && sh product_test.sh
+   cd /test_script && chmod 777 * && sh main.sh
    ```
 
-4. If enable to test USB, make sure plug the U disk first;
-   
-5. If enable to test SD, make sure plug the tf card to slot;
+4. Test flow
 
-6. If enable to test EMMC, make sure plug the emmc to slot;
+   a. PWMDAC 5 seconds
 
-7. If enable to test SSD, make sure plug the ssd to pcie slot;
-   
-8. If enable to test ETH0/1, make sure ETH0/1 connect to PC/VM through a network cable, the PC/VM IP and ETH0/1 IP are on the same network segment, PC/VM open the iperf3 service, such as **iperf3 -s**;
-   
-9. If enable to test HDMI/DSI, when you see some log as follow, take a few second, then press **Enter**;
+   b. HDMI and MIPI DSI 6 seconds
 
-   ```
-   [   27.890839] innohdmi-rockchip 29590000.hdmi: inno_hdmi_config_pll 299 reg[1ad],val[01]
-   [   27.898745] innohdmi-rockchip 29590000.hdmi: inno_hdmi_config_pll 299 reg[1aa],val[0e]
-   [   27.906664] innohdmi-rockchip 29590000.hdmi: inno_hdmi_config_pll 299 reg[1a0],val[00]
-   
-   ```
+   c. Run other test items parallel
 
-   then show you to input the test result as follow:
+   d. PWMDAC, HDMI, MIPI DSI, MIPI CSI need to enter test results manually
 
-   ```
-   please enter HDMI TEST OK(y/n?): y
-   
-   ```
 
-   if the hdmi/dsi display can display, then input **y**, otherwise input **n**;
 
-10. If enable to test PWMDAC, it will play a few second audio, then show you to input the test result as follow:
+# EEPROM
 
-   ```
-   ******************PWMADC testing...
-   aplay -Dhw:0,0 audio8k16S.wav
-   Playing WAVE 'audio8k16S.wav' : Signed 16 bit Little Endian, Rate 8000 Hz, Stereo
-   [  670.987352] dma: failed to stop
-   [  671.000517] dma dma2chan0: dma2chan0 failed to stop
-   please enter PWMADC TEST OK(y/n?): 
-   
-   ```
-
-   if you can listen the sound, then input **y**, otherwise input **n**;
-
-11. If enable to test CSI, it will show the video of imx219 sensor to hdmi display, then show you to input the test result as follow:
-
-   ```
-   [   45.570559] innohdmi-rockchip 29590000.hdmi: inno_hdmi_config_pll 299 reg[1aa],val[0e]
-   [   45.572513] [st_vin] error: vin_change_buffer: output state no ready 5!, 1
-   [   45.578466] innohdmi-rockchip 29590000.hdmi: inno_hdmi_config_pll 299 reg[1a0],val[00]
-   [   45.605842] [st_vin] error: vin_change_buffer: output state no ready 5!, 1
-   please enter MIPI CSI TEST OK(y/n?):
-   
-   ```
-
-   if the hdmi display show the imx219 sensor video, then input **y**, otherwise input **n**;
-
-12. There are two methods to write eeprom
+There are two methods to write eeprom
 
    **The 1st**
    If you have the file of eeprom data **eeprom.eep**, you can execute the follow command to write data to eeprom device
