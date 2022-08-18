@@ -10,6 +10,7 @@ fun_1_item=1
 fun_3_heart=3
 fun_4_result=4
 uart_recv_data=ttytemp.dat
+eeprom_data=eeprom.eep
 str_head="{@"
 str_tail="}"
 str_test_num_flag="#"
@@ -29,6 +30,8 @@ test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0)
 test_over_cnt=0
 heart_flag=0
 heart_log=heart.log
+get_module_info=0
+init_first=0
 
 month=(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
 
@@ -99,16 +102,34 @@ function heart_burning()
 
 function module_info()
 {
-	eth0_mac=`cat /sys/class/net/eth0/address`
-	echo "eth0_mac: $eth0_mac"
-	eth1_mac=`cat /sys/class/net/eth1/address`
-	echo "eth1_mac: $eth1_mac"
-	pn="VF7110A1-2228-D008E000-00000001"
-	sn="StarFive Technology Co. Ltd."
+	data=$1
+	IFS=","
+	i=0
+	array_data=($data)
+	bom_version="A"
+	pcb_version=1
 
-	module_frame="{@5,#0,"$pn,$sn,$eth0_mac,$eth1_mac$str_tail
-	echo "module_frame: $module_frame"
-	send_data $module_frame
+	for var in ${array_data[@]}
+	do
+		let i++
+		echo $var
+	done
+
+	if [ $i -gt 5 ]
+	then
+		pn=${array_data[2]}
+		sn=${array_data[3]}
+		eth0_mac=${array_data[4]}
+		str_eth0_mac=`echo "${eth0_mac:0:2}:${eth0_mac:2:2}:${eth0_mac:4:2}:${eth0_mac:6:2}:${eth0_mac:8:2}:${eth0_mac:10:2}"`
+		echo "str_eth0_mac: $str_eth0_mac"
+		eth1_mac=${array_data[5]}
+		str_eth1_mac=`echo "${eth1_mac:0:2}:${eth1_mac:2:2}:${eth1_mac:4:2}:${eth1_mac:6:2}:${eth1_mac:8:2}:${eth1_mac:10:2}"`
+		echo "str_eth1_mac: $str_eth1_mac"
+
+		./enter_mac_sn/enter_mac_sn $sn $bom_version $pcb_version $str_eth0_mac $str_eth1_mac
+	fi
+
+	IFS=" "
 }
 
 function get_version_date()
@@ -117,6 +138,7 @@ function get_version_date()
 	date_day=1
 	date_month=1
 	date_year=2022
+	IFS=" "
 
 	for ((i=0;i<12;i++))
 	do
@@ -287,37 +309,53 @@ function send_frame()
 	result2=`expr index "$data" $str_tail`
 	item_index=`expr index "$data" $str_test_num_flag`
 	let comma_last_index=`echo "$data" | awk -F '','' '{printf "%d", length($0)-length($NF)}'`
+	comma_first_index=`expr index "$data" ,`
+	func_index=`expr index "$data" @`
+	#echo "comma_first_index: $comma_first_index"
+	#echo "func_index: $func_index"
 	#echo "result1: $result1"
 	#echo "result2: $result2"
 	#echo "item_index: $item_index"
 	#echo "comma_last_index: $comma_last_index"
-	if [[ "$result1" != "" ]] && [[ $result2 -gt $comma_last_index ]] && [[ $comma_last_index -gt $item_index ]]
+	if [[ "$result1" != "" ]] && [[ $result2 -gt $comma_last_index ]] && [[ $comma_last_index -gt $item_index ]] && [[ $comma_first_index -gt $func_index ]]
 	then
 		len=`expr $comma_last_index - $item_index - 1`
 		test_num=${data:$item_index:$len}
 		#echo "test_num: $test_num"
-
-		if [ $test_num -lt $test_enable_num ]
+		len=`expr $comma_first_index - $func_index - 1`
+		func_num=${data:$func_index:$len}
+		#echo "func_num: $func_num"
+		if [ "$func_num" = "5" ]
 		then
-			len=`expr $result2 - $comma_last_index - 1`
-			test_result=${data:$comma_last_index:$len}
-			#echo "test_result: $test_result"
-
-			frame=${data:0:$comma_last_index}
-			test_name=${test_enable_list[$test_num]}
-
-			if [ $test_result = "1" ]
+			send_data $data
+			module_info $data
+			get_module_info=1
+		elif [ "$func_num" = "4" ]
+		then
+			if [ $test_num -lt $test_enable_num ]
 			then
-				str_result="PASS"
-			else
-				str_result="FAIL"
-			fi
+				len=`expr $result2 - $comma_last_index - 1`
+				test_result=${data:$comma_last_index:$len}
+				#echo "test_result: $test_result"
 
-			log_file=$test_name$log_suffix
-			echo $str_result > $log_file
-			test_enable_auto_list[$test_num]=1
+				frame=${data:0:$comma_last_index}
+				test_name=${test_enable_list[$test_num]}
+
+				if [ $test_result = "1" ]
+				then
+					str_result="PASS"
+				else
+					str_result="FAIL"
+				fi
+
+				log_file=$test_name$log_suffix
+				echo $str_result > $log_file
+				test_enable_auto_list[$test_num]=1
+			else
+				echo "recv wrong test_num: $test_num"
+			fi
 		else
-			echo "recv wrong test_num: $test_num"
+			echo "recv wrong func_num: $func_num"
 		fi
 	else
 		echo "recv wrong data"
@@ -497,30 +535,34 @@ function all_test_over()
 	fi
 }
 
+function init_process()
+{
+	test_init
+	test_list_init
+	pwmdac_process
+	dsi_process
+	test_process
+}
+
 
 set_date
 uart3_init
 uart3_open
 
-module_info
-
-heart 1 &
-heart_pid=$!
-
-test_init
-test_list_init
 old_info=$(recv_data)
-pwmdac_process
-dsi_process
-test_process
 
+#module_info
 
-kill $heart_pid
 heart 0 &
 heart_pid=$!
 
 while true
 do
+	if [[ "$init_first" = "0" ]] && [[ "$get_module_info" = "1" ]]
+	then
+		init_process
+		init_first=1
+	fi
 	
 	is_recv_data 5
 	

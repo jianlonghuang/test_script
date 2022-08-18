@@ -4,6 +4,7 @@
 #include <sys/ioctl.h>  
 #include <stdlib.h>  
 #include <fcntl.h>  
+#include <ctype.h>
 //#include <sys/io.h> 
 
 #define EEPROM_SIZE				512
@@ -22,6 +23,7 @@
 #define EEPROM_OFFSET	0x0
 #define MAC_ADDR_LEN	17
 #define CRC16 0x8005
+#define EEPROM_LOG "EEPROM.log"
 
 struct t_eeprom_header {
 	char signature[4];
@@ -272,63 +274,220 @@ static int eeprom_write_data(char *data, int len)
 	return 0;
 }
 
-void main(void)
+static int eeprom_read_data(char *data)
+{
+	int fd = 0;
+	int ret = 0;
+	unsigned short crc16 = 0;
+	struct t_eeprom_data eeprom_data_tmp;
+	struct t_eeprom_header *p_header = &eeprom_data_tmp.eeprom_header;
+	struct t_atom1_info *p_atom1_info = &eeprom_data_tmp.atom1_info;
+	struct t_atom4_info *p_atom4_info = &eeprom_data_tmp.atom4_info;
+
+	fd = open(EEPROM_DEV, O_RDWR);
+	if (fd < 0) {
+		printf("Open %s fail\n", EEPROM_DEV);
+		return -1;
+	}
+
+	lseek(fd, EEPROM_OFFSET, SEEK_SET);
+
+	ret = read(fd, data, sizeof(eeprom_data_tmp));
+	if (ret < 0) {
+		printf("Read error\n");
+		return -1;
+	}
+
+	memcpy(&eeprom_data_tmp, data, sizeof(eeprom_data_tmp));
+
+	if (strncmp((void *)p_header->signature, (void *)signature, sizeof(p_header->signature)) != 0) {
+		printf("eeprom data header wrong\n");
+		return -1;
+	}
+
+	crc16 = checksum_crc16((unsigned char *)p_atom1_info, sizeof(eeprom_data_tmp.atom1_info) - 2);
+	if (crc16 != p_atom1_info->crc16) {
+		printf("eeprom data atom1 crc wrong\n");
+		return -1;
+	}
+
+	crc16 = checksum_crc16((unsigned char *)p_atom4_info, sizeof(eeprom_data_tmp.atom4_info) - 2);
+	if (crc16 != p_atom4_info->crc16) {
+		printf("eeprom data atom4 crc wrong\n");
+		return -1;
+	}
+
+	close(fd);
+	return 0;
+}
+
+static void mac_stringtohex(char *str, char *hex)
+{
+	char *p = strtok(str, ":");
+	int i = 0;
+
+	while(p != NULL) {
+		if (i++ >= 6) {
+			break;
+		}
+		*hex++ = (int)strtol(p, NULL, 16);
+		p = strtok(NULL, ":");
+	}
+}
+
+static int check_char_hex(char *str)
+{
+	int i = 0;
+
+	while(*str != 0) {
+		if(isxdigit(*str) == 0 && *str != ':')
+			return -1;
+		str++;
+		i++;
+	}
+
+	if (i != 17)
+		return -1;
+	else
+		return 0;
+}
+
+static int check_arg_valid(int argc, char *argv[])
+{
+	char bom_version = 0;
+
+	for (int i = 0; i < argc; i++)
+		printf("argv[%d]: %s\n", i, argv[i]);
+
+	if (argc != 6) {
+		printf("write eeprom argc wrong: %d\n", argc);
+		return -1;
+	}
+
+	if (strlen(argv[1]) != LEN_PRODUCT_STRING - 1) {
+		printf("write eeprom psn len wrong: %ld\n", strlen(argv[1]));
+		return -1;
+	}
+
+	memcpy(&bom_version, argv[2], 1);
+	if (bom_version < 'A' || bom_version > 'Z') {
+		printf("write eeprom bom version wrong: %d\n", bom_version);
+		return -1;
+	}
+
+	if(check_char_hex(argv[4]) != 0) {
+		printf("write eeprom eth0 mac wrong\n");
+		return -1;
+	}
+
+	if(check_char_hex(argv[5]) != 0) {
+		printf("write eeprom eth1 mac wrong\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static void write_eeprom_log(char *result)
+{
+	FILE* pf = fopen(EEPROM_LOG, "w+");
+	if (pf == NULL) {
+		printf("open %s fail\n", EEPROM_LOG);
+		return;
+	}
+
+	fputs(result, pf);
+
+	fclose(pf);
+
+	pf = NULL;
+}
+
+void main(int argc, char *argv[])
 {
 	int i=0;
 	char *use_default;
 	unsigned char eth0_mac_addr[6] = {0x6c, 0xcf, 0x39, 0x6c, 0xde, 0x12};
 	unsigned char eth1_mac_addr[6] = {0x6c, 0xcf, 0x39, 0x7c, 0xae, 0x13};
 	unsigned char psn[LEN_PRODUCT_STRING] = "VF7110A1-2228-D008E000-00000001\0";
+	char pcb_version = 0x01;
+	char bom_version = 'A';
+	char rbuf[EEPROM_SIZE] = {0};
 
 	struct t_eeprom_header *p_header = &g_eeprom_data.eeprom_header;
 	struct t_atom1_info *p_atom1_info = &g_eeprom_data.atom1_info;
 	struct t_atom4_info *p_atom4_info = &g_eeprom_data.atom4_info;
 
-	memset(&g_eeprom_data, 0x0, sizeof(g_eeprom_data));
+	printf("Usage: ./enter_mac_sn sn bom_version pcb_version eth0_mac eth1_mac\n");
+	printf("       ./enter_mac_sn VF7110A1-2228-D008E000-00000001 A 1 6c:cf:39:6c:de:12 6c:cf:39:7c:ae:13\n");
 
-	printf("Use default value(y/n)?\r\n");
-        scanf("%1s", use_default);
-	if (strcmp(use_default, "y")) {
-		scan_input_mac(0, eth0_mac_addr);
-        	scan_input_mac(1, eth1_mac_addr);
-        	scan_input_sn(psn);
+	if (check_arg_valid(argc, argv) == 0) {
+		memset(psn, 0x0, LEN_PRODUCT_STRING);
+		memcpy(psn, argv[1], LEN_PRODUCT_STRING - 1);
+		printf("psn %ld: %s\n", strlen(argv[1]), psn);
+		memcpy(&bom_version, argv[2], 1);
+		pcb_version = atoi(argv[3]);
+		printf("bom = %d, pcb = %d\n", bom_version, pcb_version);
+
+		mac_stringtohex(argv[4], eth0_mac_addr);
+		mac_stringtohex(argv[5], eth1_mac_addr);
+	} else {
+		write_eeprom_log("FAIL");
+		return;
 	}
 
-	memcpy((void *)p_header->signature, (void *)signature, sizeof(p_header->signature));
-	
-	p_header->version = HEAD_REVISION;
-	p_header->reversed = 0;
-	p_header->numatoms = HEAD_ATOMS_NUM;
-	p_header->eeplen = sizeof(g_eeprom_data);
-	printf("eeplen = %d\r\n", p_header->eeplen);
-	printf("eeprom_header = %ld\r\n", sizeof(g_eeprom_data.eeprom_header));
-	printf("atom1_info = %ld\r\n", sizeof(g_eeprom_data.atom1_info));
-	printf("atom4_info = %ld\r\n", sizeof(g_eeprom_data.atom4_info));
 
-	p_atom1_info->atom_header.type = TYPE_VENDOR_INFO;
-	p_atom1_info->atom_header.count = 1;
-	p_atom1_info->atom_header.dlen = sizeof(p_atom1_info->vendor_info) + 2;
-	memset(p_atom1_info->vendor_info.uuid, 0x0, sizeof(p_atom1_info->vendor_info.uuid));
-	p_atom1_info->vendor_info.pid = 0;
-	p_atom1_info->vendor_info.pver = 0;
-	p_atom1_info->vendor_info.vslen = LEN_VENDOR_STRING;
-	p_atom1_info->vendor_info.pslen = LEN_PRODUCT_STRING;
-	memcpy(p_atom1_info->vendor_info.vstr, starfive_vstr, sizeof(p_atom1_info->vendor_info.vstr));
-	memcpy(p_atom1_info->vendor_info.pstr, psn, sizeof(p_atom1_info->vendor_info.pstr));
-	p_atom1_info->crc16 = checksum_crc16((unsigned char *)p_atom1_info, sizeof(g_eeprom_data.atom1_info) - 2);
-	
-	p_atom4_info->atom_header.type = TYPE_CUSTOM_DATA;
-	p_atom4_info->atom_header.count = 0x02;
-	p_atom4_info->atom_header.dlen = sizeof(p_atom4_info->custom_info) + 2;
-	p_atom4_info->custom_info.version = 0x02;
-	p_atom4_info->custom_info.pcb_version = 0x01;
-	p_atom4_info->custom_info.bom_version = 'A';
-	p_atom4_info->custom_info.reserved[0] = 0;
-	p_atom4_info->custom_info.reserved[1] = 0;
-	memcpy(p_atom4_info->custom_info.ether_mac_0, eth0_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_0));
-	memcpy(p_atom4_info->custom_info.ether_mac_1, eth1_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_1));
-	p_atom4_info->crc16 = checksum_crc16((unsigned char *)p_atom4_info, sizeof(g_eeprom_data.atom4_info) - 2);
-	
+	if (eeprom_read_data(rbuf) == 0) {
+		memcpy((void *)&g_eeprom_data, (void *)rbuf, sizeof(g_eeprom_data));
+		memcpy(p_atom1_info->vendor_info.pstr, psn, sizeof(p_atom1_info->vendor_info.pstr));
+		p_atom1_info->crc16 = checksum_crc16((unsigned char *)p_atom1_info, sizeof(g_eeprom_data.atom1_info) - 2);
+
+		p_atom4_info->custom_info.pcb_version = pcb_version;
+		p_atom4_info->custom_info.bom_version = bom_version;
+		memcpy(p_atom4_info->custom_info.ether_mac_0, eth0_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_0));
+		memcpy(p_atom4_info->custom_info.ether_mac_1, eth1_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_1));
+		p_atom4_info->crc16 = checksum_crc16((unsigned char *)p_atom4_info, sizeof(g_eeprom_data.atom4_info) - 2);
+	} else {
+
+		memset(&g_eeprom_data, 0x0, sizeof(g_eeprom_data));
+		memcpy((void *)p_header->signature, (void *)signature, sizeof(p_header->signature));
+
+		p_header->version = HEAD_REVISION;
+		p_header->reversed = 0;
+		p_header->numatoms = HEAD_ATOMS_NUM;
+		p_header->eeplen = sizeof(g_eeprom_data);
+		printf("eeplen = %d\r\n", p_header->eeplen);
+		printf("eeprom_header = %ld\r\n", sizeof(g_eeprom_data.eeprom_header));
+		printf("atom1_info = %ld\r\n", sizeof(g_eeprom_data.atom1_info));
+		printf("atom4_info = %ld\r\n", sizeof(g_eeprom_data.atom4_info));
+
+		p_atom1_info->atom_header.type = TYPE_VENDOR_INFO;
+		p_atom1_info->atom_header.count = 1;
+		p_atom1_info->atom_header.dlen = sizeof(p_atom1_info->vendor_info) + 2;
+		memset(p_atom1_info->vendor_info.uuid, 0x0, sizeof(p_atom1_info->vendor_info.uuid));
+		p_atom1_info->vendor_info.pid = 0;
+		p_atom1_info->vendor_info.pver = 0;
+		p_atom1_info->vendor_info.vslen = LEN_VENDOR_STRING;
+		p_atom1_info->vendor_info.pslen = LEN_PRODUCT_STRING;
+		memcpy(p_atom1_info->vendor_info.vstr, starfive_vstr, sizeof(p_atom1_info->vendor_info.vstr));
+		memcpy(p_atom1_info->vendor_info.pstr, psn, sizeof(p_atom1_info->vendor_info.pstr));
+		p_atom1_info->crc16 = checksum_crc16((unsigned char *)p_atom1_info, sizeof(g_eeprom_data.atom1_info) - 2);
+
+		p_atom4_info->atom_header.type = TYPE_CUSTOM_DATA;
+		p_atom4_info->atom_header.count = 0x02;
+		p_atom4_info->atom_header.dlen = sizeof(p_atom4_info->custom_info) + 2;
+		p_atom4_info->custom_info.version = 0x02;
+		p_atom4_info->custom_info.pcb_version = pcb_version;
+		p_atom4_info->custom_info.bom_version = bom_version;
+		p_atom4_info->custom_info.reserved[0] = 0;
+		p_atom4_info->custom_info.reserved[1] = 0;
+		memcpy(p_atom4_info->custom_info.ether_mac_0, eth0_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_0));
+		memcpy(p_atom4_info->custom_info.ether_mac_1, eth1_mac_addr, sizeof(p_atom4_info->custom_info.ether_mac_1));
+		p_atom4_info->crc16 = checksum_crc16((unsigned char *)p_atom4_info, sizeof(g_eeprom_data.atom4_info) - 2);
+	}
+
 	eeprom_write_data((unsigned char *)&g_eeprom_data, sizeof(g_eeprom_data));
+	write_eeprom_log("PASS");
 
 }

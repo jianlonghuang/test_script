@@ -233,13 +233,15 @@ pins13=null
 
 4. Test flow
 
-   a. PWMDAC 5 seconds
+   a. wait scan to get sn/mac infomation
 
-   b. HDMI and MIPI DSI 6 seconds
+   b. PWMDAC 5 seconds
 
-   c. Run other test items parallel
+   c. HDMI and MIPI DSI 6 seconds
 
-   d. PWMDAC, HDMI, MIPI DSI, MIPI CSI need to enter test results manually
+   d. Run other test items parallel
+   
+   e. PWMDAC, HDMI, MIPI DSI, MIPI CSI need to enter test results manually
 
 
 
@@ -255,21 +257,43 @@ There are two methods to write eeprom
    ```
 
    **The 2nd**
-   You can execute the follow command to write default value or input mac/sn by yourself
+   You can execute the follow command to update eeprom data
+
+​	If eeprom data is valid, then the follow command just update sn, bom_version, pcb_version, eth0_mac, eth1_mac;
+
+​	If eeprom data is invalid, then the follow command will write the default data, and update  sn, bom_version, pcb_version, eth0_mac, eth1_mac;
 
    ```
-   cd enter_mac_sn && chmod 777 * && ./enter_mac_sn
+   cd enter_mac_sn && chmod 777 *
+   ./enter_mac_sn VF7110A1-2228-D008E000-00000001 A 1 6c:cf:39:6c:de:12 6c:cf:39:7c:ae:13
    ```
 
-   The output as follow:
+
+
+The usage of the command
+
+```
+ Usage: ./enter_mac_sn sn bom_version pcb_version eth0_mac eth1_mac
+       ./enter_mac_sn VF7110A1-2228-D008E000-00000001 A 1 6c:cf:39:6c:de:12 6c:cf:39:7c:ae:13
+```
+
+
+
+The output as follow:
+
    ```
-   # ./enter_mac_sn
-   Use default value(y/n)?
-   y
-   eeplen = 136
-   eeprom_header = 12
-   atom1_info = 96
-   atom4_info = 28
+   # ./enter_mac_sn VF7110A1-2228-D008E000-00000001 A 1 6c:cf:39:6c:de:12 6c:cf:39:
+   7c:ae:13
+   Usage: ./enter_mac_sn sn bom_version pcb_version eth0_mac eth1_mac
+          ./enter_mac_sn VF7110A1-2228-D008E000-00000001 A 1 6c:cf:39:6c:de:12 6c:cf:39:7c:ae:13
+   argv[0]: ./enter_mac_sn
+   argv[1]: VF7110A1-2228-D008E000-00000001
+   argv[2]: A
+   argv[3]: 1
+   argv[4]: 6c:cf:39:6c:de:12
+   argv[5]: 6c:cf:39:7c:ae:13
+   psn 31: VF7110A1-2228-D008E000-00000001
+   bom = 65, pcb = 1
    
    53 46 56 46 02 00 02 00 88 00 00 00 01 00 01 00 
    58 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
@@ -280,33 +304,10 @@ There are two methods to write eeprom
    2d 30 30 30 30 30 30 30 31 00 da e6 04 00 02 00 
    14 00 00 00 02 00 01 41 6c cf 39 6c de 12 6c cf 
    39 7c ae 13 00 00 00 df 
+   
    ```
 
-   ```
-   # ./enter_mac_sn
-   Use default value(y/n)?
-   n
-   Please enter ETH0 mac address: (xx-xx-xx-xx-xx-xx)
-   6c-cf-39-6c-de-11
-   Please enter ETH0 mac address: (xx-xx-xx-xx-xx-xx)
-   6c-cf-39-6c-de-22
-   Please enter SN: (XXXXXXXX-XXXXX-XXXX-XXXXXXX)
-   VF7110B1-2235-D008E000-10101010
-   eeplen = 136
-   eeprom_header = 12
-   atom1_info = 96
-   atom4_info = 28
-   
-   53 46 56 46 02 00 02 00 88 00 00 00 01 00 01 00 
-   58 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-   00 00 00 00 00 00 00 00 20 20 53 74 61 72 46 69 
-   76 65 20 54 65 63 68 6e 6f 6c 6f 67 79 20 43 6f 
-   2e 2c 20 4c 74 64 2e 00 00 00 56 46 37 31 31 30 
-   42 31 2d 32 32 33 35 2d 44 30 30 38 45 30 30 30 
-   2d 31 30 31 30 31 30 31 30 00 9c ab 04 00 02 00 
-   14 00 00 00 02 00 01 41 6c cf 39 6c de 11 6c cf 
-   39 6c de 22 00 00 9e e3 
-   ```
+
 
 
 
