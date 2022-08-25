@@ -300,6 +300,8 @@ static int eeprom_read_data(char *data)
 
 	memcpy(&eeprom_data_tmp, data, sizeof(eeprom_data_tmp));
 
+	for (int i = 0; i < 4; i++)
+		printf("%x\n", p_header->signature[i]);
 	if (strncmp((void *)p_header->signature, (void *)signature, sizeof(p_header->signature)) != 0) {
 		printf("eeprom data header wrong\n");
 		return -1;

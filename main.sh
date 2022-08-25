@@ -119,6 +119,7 @@ function module_info()
 	then
 		pn=${array_data[2]}
 		sn=${array_data[3]}
+		sn=$pn"-"$sn
 		eth0_mac=${array_data[4]}
 		str_eth0_mac=`echo "${eth0_mac:0:2}:${eth0_mac:2:2}:${eth0_mac:4:2}:${eth0_mac:6:2}:${eth0_mac:8:2}:${eth0_mac:10:2}"`
 		echo "str_eth0_mac: $str_eth0_mac"
