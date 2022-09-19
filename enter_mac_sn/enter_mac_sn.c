@@ -429,7 +429,7 @@ void main(int argc, char *argv[])
 		memcpy(psn, argv[1], LEN_PRODUCT_STRING - 1);
 		printf("psn %ld: %s\n", strlen(argv[1]), psn);
 		memcpy(&bom_version, argv[2], 1);
-		pcb_version = atoi(argv[3]);
+		pcb_version = (unsigned char)strtoul(argv[3], NULL, 16);
 		printf("bom = %d, pcb = %d\n", bom_version, pcb_version);
 
 		mac_stringtohex(argv[4], eth0_mac_addr);

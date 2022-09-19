@@ -14,8 +14,8 @@ starttime=$(date +%s)
 
 echo "******************PWMADC testing..."
 
-echo "aplay -Dhw:0,0 audio8k16S.wav"
-#aplay -Dhw:0,0 audio.wav &
+echo "aplay -Dhw:0,0 audio.wav"
+aplay -Dhw:0,0 audio.wav &
 
 
 while true

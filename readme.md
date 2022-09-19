@@ -34,13 +34,13 @@ enable=y                               #y: test; n: not test
 
 usbcnt=4                               #USB interface counts, max: 4
 
-usb1device=sda1                        #usb device1 name
+usb1device=sda                         #usb device1 name
 
-usb2device=sdb1                        #usb device2 name
+usb2device=sdb                         #usb device2 name
 
-usb3device=sdc1                        #usb device3 name
+usb3device=sdc                         #usb device3 name
 
-usb4device=sdd1                        #usb device4 name
+usb4device=sdd                         #usb device4 name
 
 blocksize=512k                         #blocksize to read
 
@@ -54,7 +54,7 @@ expectspeed=20                         #expect USB read speed(Mbit/s), to judge 
 
 enable=y                               #y: test; n: not test
 
-sddevice=mmcblk1p3                     #sd name
+sddevice=mmcblk1                       #sd name
 
 blocksize=512k                         #blocksize to read
 
@@ -68,7 +68,7 @@ expectspeed=7                          #expect read speed(Mbit/s), to judge the 
 
 enable=y                               #y: test; n: not test
 
-sddevice=mmcblk0p1                     #emmc name
+sddevice=mmcblk0                       #emmc name
 
 blocksize=512k                         #blocksize to read
 
@@ -140,7 +140,7 @@ pins9=51,50
 
 pins10=49,56
 
-pins11=62,46
+pins11=40,46
 
 pins12=36,61
 
@@ -235,13 +235,11 @@ pins13=null
 
    a. wait scan to get sn/mac infomation
 
-   b. PWMDAC 5 seconds
+   b. HDMI and MIPI DSI 6 seconds
 
-   c. HDMI and MIPI DSI 6 seconds
-
-   d. Run other test items parallel
+   v. Run other test items parallel
    
-   e. PWMDAC, HDMI, MIPI DSI, MIPI CSI need to enter test results manually
+   d. PWMDAC, HDMI, MIPI DSI, MIPI CSI need to enter test results manually
 
 
 

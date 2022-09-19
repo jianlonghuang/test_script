@@ -18,12 +18,12 @@ log_suffix=".log"
 cfg_name=cfg.ini
 test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
 test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh")
-test_parallel_list=(1 1 1 1 1 1 1 1 1 0 0)
+test_parallel_list=(1 1 1 1 1 1 1 1 1 1 0)
 test_auto_list=(1 1 1 1 1 1 1 0 0 0 0)
 
 test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
 test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh")
-test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 0 0)
+test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 1 0)
 test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0)
 test_over_list=(0 0 0 0 0 0 0 0 0 0 0)
 test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0)
@@ -32,6 +32,8 @@ heart_flag=0
 heart_log=heart.log
 get_module_info=0
 init_first=0
+init_overtime=0
+outcome_overtime=0
 
 month=(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
 
@@ -106,8 +108,6 @@ function module_info()
 	IFS=","
 	i=0
 	array_data=($data)
-	bom_version="A"
-	pcb_version=1
 
 	for var in ${array_data[@]}
 	do
@@ -120,14 +120,21 @@ function module_info()
 		pn=${array_data[2]}
 		sn=${array_data[3]}
 		sn=$pn"-"$sn
-		eth0_mac=${array_data[4]}
+		pcb_version=${array_data[4]}
+		bom_version=${array_data[5]}
+		eth0_mac=${array_data[6]}
 		str_eth0_mac=`echo "${eth0_mac:0:2}:${eth0_mac:2:2}:${eth0_mac:4:2}:${eth0_mac:6:2}:${eth0_mac:8:2}:${eth0_mac:10:2}"`
 		echo "str_eth0_mac: $str_eth0_mac"
-		eth1_mac=${array_data[5]}
+		eth1_mac=${array_data[7]}
 		str_eth1_mac=`echo "${eth1_mac:0:2}:${eth1_mac:2:2}:${eth1_mac:4:2}:${eth1_mac:6:2}:${eth1_mac:8:2}:${eth1_mac:10:2}"`
 		echo "str_eth1_mac: $str_eth1_mac"
 
 		./enter_mac_sn/enter_mac_sn $sn $bom_version $pcb_version $str_eth0_mac $str_eth1_mac
+
+		IFS=" "
+		frame="{@5,#0,"$pn,$sn,$eth0_mac,$eth1_mac
+		echo "frame: $frame"
+		send_data $frame
 	fi
 
 	IFS=" "
@@ -177,7 +184,10 @@ function get_version_date()
 
 function test_init()
 {
-	version_mds="7aa73a5c05a44a053baa7508f4bcdfc0"
+	version_mds=$(echo `md5sum main.sh`)
+	array_version_mds=($version_mds)
+	version_mds=${array_version_mds[0]}
+	echo "version_mds: $version_mds"
 	version > version.log
 
 	line=$(sed -n '1p' version.log)
@@ -314,7 +324,7 @@ function send_frame()
 	func_index=`expr index "$data" @`
 	#echo "comma_first_index: $comma_first_index"
 	#echo "func_index: $func_index"
-	#echo "result1: $result1"
+	echo "result1: $result1"
 	#echo "result2: $result2"
 	#echo "item_index: $item_index"
 	#echo "comma_last_index: $comma_last_index"
@@ -328,7 +338,6 @@ function send_frame()
 		#echo "func_num: $func_num"
 		if [ "$func_num" = "5" ]
 		then
-			send_data $data
 			module_info $data
 			get_module_info=1
 		elif [ "$func_num" = "4" ]
@@ -478,7 +487,7 @@ function get_dsi_result()
 	do
 		endtime=$(date +%s)
 		runtime=$(($endtime-$starttime))
-		if [ $runtime -gt 6 ]
+		if [ $runtime -gt 8 ]
 		then
 			echo -ne "\n"
 			break
@@ -509,8 +518,43 @@ function pwmdac_process()
 	fi
 }
 
+function manual_outcome_overtime()
+{
+	endtime=$(date +%s)
+	runtime=$(($endtime-$starttime))
+	echo "manual_outcome_overtime: $runtime"
+	if [[ $runtime -gt 60 ]] && [[ $outcome_overtime -eq 0 ]]
+	then
+		outcome_overtime=1
+		for ((i=0;i<test_enable_num;i++))
+		do
+			if [ ${test_enable_auto_list[$i]} = "0" ]
+			then
+				test_name=${test_enable_list[$i]}
+				log_file=$test_name$log_suffix
+				#echo "log_file:$log_file"
+				echo "FAIL" > $log_file
+				test_enable_auto_list[$i]=1
+			fi
+		done
+	fi
+}
+
 function all_test_over()
 {
+	if [ "$init_first" = "0" ]
+	then
+		endtime=$(date +%s)
+		runtime=$(($endtime-$starttime))
+		echo "init_overtime: $runtime"
+		if [ $runtime -gt 60 ]
+		then
+			init_overtime=1
+		fi
+	else
+		manual_outcome_overtime
+	fi
+
 	test_over_cnt=0
 	for ((i=0;i<test_enable_num;i++))
 	do
@@ -521,18 +565,12 @@ function all_test_over()
 	done
 
 	#echo "test_over_cnt: $test_over_cnt"
-	if [[ $test_over_cnt -eq $test_enable_num ]]
+	if [[ $test_over_cnt -eq $test_enable_num ]] || [[ "$init_overtime" = "1" ]]
 	then
-		let waite_count++
-		if [ $waite_count -gt 200 ]
-		then
-			waite_count=0
-			echo "all test over"
-			killall cat
-			kill $heart_pid
-			exit
-		fi
-		
+		echo "all test over"
+		killall cat
+		kill $heart_pid
+		exit
 	fi
 }
 
@@ -540,11 +578,10 @@ function init_process()
 {
 	test_init
 	test_list_init
-	pwmdac_process
+	#pwmdac_process
 	dsi_process
 	test_process
 }
-
 
 set_date
 uart3_init
@@ -556,6 +593,7 @@ old_info=$(recv_data)
 
 heart 0 &
 heart_pid=$!
+starttime=$(date +%s)
 
 while true
 do
@@ -563,6 +601,7 @@ do
 	then
 		init_process
 		init_first=1
+		starttime=$(date +%s)
 	fi
 	
 	is_recv_data 5
