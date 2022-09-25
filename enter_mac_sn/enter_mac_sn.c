@@ -435,7 +435,7 @@ void main(int argc, char *argv[])
 		mac_stringtohex(argv[4], eth0_mac_addr);
 		mac_stringtohex(argv[5], eth1_mac_addr);
 	} else {
-		write_eeprom_log("FAIL");
+		write_eeprom_log("FAIL\n");
 		return;
 	}
 
@@ -490,6 +490,6 @@ void main(int argc, char *argv[])
 	}
 
 	eeprom_write_data((unsigned char *)&g_eeprom_data, sizeof(g_eeprom_data));
-	write_eeprom_log("PASS");
+	write_eeprom_log("PASS\n");
 
 }

@@ -152,12 +152,12 @@ done
 
 if [ $failcnt = 0 ]
 then
-	echo "GPIO:                PASS"
-	echo "GPIO:                PASS" >> test_result.log
+	echo "GPIO:           PASS"
+	echo "GPIO:           PASS" >> test_result.log
 	echo "PASS" > $log_file
 else
-	echo "GPIO:                FAIL"
-	echo "GPIO:                FAIL" >> test_result.log
+	echo "GPIO:           FAIL"
+	echo "GPIO:           FAIL" >> test_result.log
 	echo $result_des > $log_file
 fi
 

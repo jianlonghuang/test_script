@@ -16,17 +16,17 @@ str_tail="}"
 str_test_num_flag="#"
 log_suffix=".log"
 cfg_name=cfg.ini
-test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
-test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh")
-test_parallel_list=(1 1 1 1 1 1 1 1 1 1 0)
-test_auto_list=(1 1 1 1 1 1 1 0 0 0 0)
+test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM)
+test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
+test_parallel_list=(1 1 1 1 1 1 1 1 1 1 0 1)
+test_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
 
 test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
-test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh")
-test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 1 0)
-test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0)
-test_over_list=(0 0 0 0 0 0 0 0 0 0 0)
-test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0)
+test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
+test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 1 0 1)
+test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0 0)
+test_over_list=(0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
 test_over_cnt=0
 heart_flag=0
 heart_log=heart.log
@@ -34,6 +34,7 @@ get_module_info=0
 init_first=0
 init_overtime=0
 outcome_overtime=0
+result_log=test_result.log
 
 month=(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
 
@@ -118,8 +119,8 @@ function module_info()
 	if [ $i -gt 5 ]
 	then
 		pn=${array_data[2]}
-		sn=${array_data[3]}
-		sn=$pn"-"$sn
+		s_sn=${array_data[3]}
+		sn=$pn"-"$s_sn
 		pcb_version=${array_data[4]}
 		bom_version=${array_data[5]}
 		eth0_mac=${array_data[6]}
@@ -132,7 +133,7 @@ function module_info()
 		./enter_mac_sn/enter_mac_sn $sn $bom_version $pcb_version $str_eth0_mac $str_eth1_mac
 
 		IFS=" "
-		frame="{@5,#0,"$pn,$sn,$eth0_mac,$eth1_mac
+		frame="{@5,#0,"$pn,$s_sn,$eth0_mac,$eth1_mac
 		echo "frame: $frame"
 		send_data $frame
 	fi
@@ -360,6 +361,7 @@ function send_frame()
 
 				log_file=$test_name$log_suffix
 				echo $str_result > $log_file
+				echo "$test_name:           $str_result" >> $result_log
 				test_enable_auto_list[$test_num]=1
 			else
 				echo "recv wrong test_num: $test_num"
@@ -534,10 +536,37 @@ function manual_outcome_overtime()
 				log_file=$test_name$log_suffix
 				#echo "log_file:$log_file"
 				echo "FAIL" > $log_file
+				echo "$test_name:           FAIL" >> $result_log
 				test_enable_auto_list[$i]=1
 			fi
 		done
 	fi
+}
+
+function output_result()
+{
+	echo "************************************************"
+	echo "*********************Result*********************"
+	echo "************************************************"
+
+	IFS=''
+	while read line
+	do
+	result=$(echo $line | grep "PASS")
+	if [[ "$result" != "" ]]
+	then
+		echo $line
+	fi
+	done < $result_log
+
+	while read line
+	do
+	result=$(echo $line | grep "FAIL")
+	if [[ "$result" != "" ]]
+	then
+		echo $line
+	fi
+	done < $result_log
 }
 
 function all_test_over()
@@ -567,6 +596,7 @@ function all_test_over()
 	#echo "test_over_cnt: $test_over_cnt"
 	if [[ $test_over_cnt -eq $test_enable_num ]] || [[ "$init_overtime" = "1" ]]
 	then
+		output_result
 		echo "all test over"
 		killall cat
 		kill $heart_pid
@@ -583,6 +613,7 @@ function init_process()
 	test_process
 }
 
+rm *.log
 set_date
 uart3_init
 uart3_open
