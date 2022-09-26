@@ -3,10 +3,11 @@
 
 echo "******************PWMADC testing..."
 
-echo "aplay -Dhw:0,0 audio8k16S.wav"
-aplay -Dhw:0,0 audio8k16S.wav
+echo "aplay -Dhw:0,0 audio.wav"
+aplay -Dhw:0,0 audio.wav &
 
-read -p "please enter PWMADC TEST OK(y/n?): " pwmadc_test_result
+sleep 1
+read -ep "please enter PWMADC TEST OK(y/n?): " pwmadc_test_result
 
 if [[ "$pwmadc_test_result" == "y" ]]
 then
@@ -16,3 +17,5 @@ else
 	echo "PWMADC FAIL"
 	echo "PWMADC:         FAIL" >> test_result.log
 fi
+
+killall aplay

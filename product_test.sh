@@ -17,6 +17,24 @@ function readINI()
  echo $RESULT
 }
 
+cfg_section=EEPROM
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+if [[ "$test_item" = "y" ]]
+then
+	./eeprom_test.sh
+fi
+
+cfg_section=GPIO
+str_testitem=$(readINI $cfg_name $cfg_section enable)
+test_item=$(echo $str_testitem | sed 's/\r//')
+gpio_pid=0
+if [[ "$test_item" = "y" ]]
+then
+	sh gpio_test.sh &
+	gpio_pid=${!}
+fi
+
 cfg_section=USB
 str_testitem=$(readINI $cfg_name $cfg_section enable)
 test_item=$(echo $str_testitem | sed 's/\r//')
@@ -109,14 +127,9 @@ then
 	csi_pid=${!}
 fi
 
-cfg_section=DSI
-str_testitem=$(readINI $cfg_name $cfg_section enable)
-test_item=$(echo $str_testitem | sed 's/\r//')
-dsi_pid=0
-if [[ "$test_item" = "y" ]]
+if [[ $gpio_pid != 0 ]]
 then
-	sh mipi_dsi_test.sh
-	dsi_pid=${!}
+	wait ${gpio_pid}
 fi
 
 if [[ $usb_pid != 0 ]]
@@ -164,13 +177,26 @@ then
 	wait ${csi_pid}
 fi
 
-if [[ $dsi_pid != 0 ]]
-then
-	wait ${dsi_pid}
-fi
 endtime=$(date +%s)
 runmin=$(($endtime-$starttime))
 echo "running time: $runmin s"
+
+year=$(date +%y)
+mon=$(date +%m)
+day=$(date +%d)
+result_log=$year-$mon-$day-$endtime
+if [ -f result_name.log ]
+then
+	str=$(sed -n '1p' result_name.log)
+	result_log=$result_log-$str.log
+fi
+
+if [ ! -d log ]
+then
+	mkdir log
+fi
+result_log=log/$result_log
+echo $result_log
 
 echo "************************************************"
 echo "*********************Result*********************"
@@ -183,6 +209,7 @@ do
 	if [[ "$result" != "" ]]
 	then
 		echo $line
+		echo $line >> $result_log
 	fi
 done < test_result.log
 
@@ -192,10 +219,10 @@ do
 	if [[ "$result" != "" ]]
 	then
 		echo $line
+		echo $line >> $result_log
 	fi
 done < test_result.log
 
-rm *.log
 
 
 

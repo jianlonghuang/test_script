@@ -31,7 +31,7 @@ echo "******************ETH0 PING testing..."
 #ifconfig eth1 down
 ifconfig eth0 $board_ip netmask 255.255.255.0
 ping_over=0
-echo "ping $vm_ip -w 5"
+echo "ping $vm_ip -w 5 -I eth0"
 ping $vm_ip -w 5 -I eth0 2>&1 | tee gmac0_test.log
 
 while read line
@@ -54,51 +54,55 @@ else
 	echo "ETH0 PING:      FAIL" >> test_result.log
 fi
 
-echo "******************ETH0 TCP TX testing..."
-iperf3 -c $vm_ip -b $sbaud -t 5 -B $board_ip 2>&1 | tee gmac0_test.log
-
-str=$(sed -n '11p' gmac0_test.log)
-#echo "string: $str"
-index=`expr index "$str" /`
-#echo "index: $index"
-txspeed=${str:$index-12:6}
-#echo "txspeed: $txspeed"
-tx_speed=${str:$index-12:17}
-echo "tx speed: $tx_speed"
-
-result=$(echo $txspeed $expect_baudtcp | awk '{if($1>$2) {printf 1} else {printf 0}}')
-Mbits=`expr index "$str" M`
-if [[ $result = 1 ]] && [[ $index != 0 ]] && [ $Mbits -gt 0 ]
+if false
 then
-	echo "ETH0 TCP TX SPEED PASS"
-	echo "ETH0 TX:        PASS  tx speed: $tx_speed" >> test_result.log
-else
-	echo "ETH0 TCP TX SPEED FAIL"
-	echo "ETH0 TX:        FAIL  tx speed: $tx_speed" >> test_result.log
+
+	echo "******************ETH0 TCP TX testing..."
+	iperf3 -c $vm_ip -b $sbaud -t 5 -B $board_ip 2>&1 | tee gmac0_test.log
+
+	str=$(sed -n '11p' gmac0_test.log)
+	#echo "string: $str"
+	index=`expr index "$str" /`
+	#echo "index: $index"
+	txspeed=${str:$index-12:6}
+	#echo "txspeed: $txspeed"
+	tx_speed=${str:$index-12:17}
+	echo "tx speed: $tx_speed"
+
+	result=$(echo $txspeed $expect_baudtcp | awk '{if($1>$2) {printf 1} else {printf 0}}')
+	Mbits=`expr index "$str" M`
+	if [[ $result = 1 ]] && [[ $index != 0 ]] && [ $Mbits -gt 0 ]
+	then
+		echo "ETH0 TCP TX SPEED PASS"
+		echo "ETH0 TX:        PASS  tx speed: $tx_speed" >> test_result.log
+	else
+		echo "ETH0 TCP TX SPEED FAIL"
+		echo "ETH0 TX:        FAIL  tx speed: $tx_speed" >> test_result.log
+	fi
+
+	echo "******************ETH0 TCP RX testing..."
+	iperf3 -c $vm_ip -b $sbaud -t 5 -R -B $board_ip 2>&1 | tee gmac0_test.log
+
+	str=$(sed -n '13p' gmac0_test.log)
+	#echo "string: $str"
+	index=`expr index "$str" /`
+	#echo "index: $index"
+	rxspeed=${str:$index-12:6}
+	#echo "rxspeed: $rxspeed"
+	rx_speed=${str:$index-12:17}
+	echo "rx speed: $rx_speed"
+
+	result=$(echo $rxspeed $expect_baudtcp | awk '{if($1>$2) {printf 1} else {printf 0}}')
+	#echo "result=$result"
+	Mbits=`expr index "$str" M`
+	if [[ $result = 1 ]] && [[ $index != 0 ]] && [ $Mbits -gt 0 ]
+	then
+		echo "ETH0 TCP RX SPEED PASS"
+		echo "ETH0 RX:        PASS  rx speed: $rx_speed" >> test_result.log
+	else
+		echo "ETH0 TCP RX SPEED FAIL"
+		echo "ETH0 RX:        FAIL  rx speed: $rx_speed" >> test_result.log
+	fi
+
 fi
-
-echo "******************ETH0 TCP RX testing..."
-iperf3 -c $vm_ip -b $sbaud -t 5 -R -B $board_ip 2>&1 | tee gmac0_test.log
-
-str=$(sed -n '13p' gmac0_test.log)
-#echo "string: $str"
-index=`expr index "$str" /`
-#echo "index: $index"
-rxspeed=${str:$index-12:6}
-#echo "rxspeed: $rxspeed"
-rx_speed=${str:$index-12:17}
-echo "rx speed: $rx_speed"
-
-result=$(echo $rxspeed $expect_baudtcp | awk '{if($1>$2) {printf 1} else {printf 0}}')
-#echo "result=$result"
-Mbits=`expr index "$str" M`
-if [[ $result = 1 ]] && [[ $index != 0 ]] && [ $Mbits -gt 0 ]
-then
-	echo "ETH0 TCP RX SPEED PASS"
-	echo "ETH0 RX:        PASS  rx speed: $rx_speed" >> test_result.log
-else
-	echo "ETH0 TCP RX SPEED FAIL"
-	echo "ETH0 RX:        FAIL  rx speed: $rx_speed" >> test_result.log
-fi
-
 
