@@ -119,8 +119,8 @@ function module_info()
 	if [ $i -gt 5 ]
 	then
 		pn=${array_data[2]}
-		s_sn=${array_data[3]}
-		sn=$pn"-"$s_sn
+		sn=${array_data[3]}
+		psn=$pn"-"$sn
 		pcb_version=${array_data[4]}
 		bom_version=${array_data[5]}
 		eth0_mac=${array_data[6]}
@@ -130,10 +130,10 @@ function module_info()
 		str_eth1_mac=`echo "${eth1_mac:0:2}:${eth1_mac:2:2}:${eth1_mac:4:2}:${eth1_mac:6:2}:${eth1_mac:8:2}:${eth1_mac:10:2}"`
 		echo "str_eth1_mac: $str_eth1_mac"
 
-		./enter_mac_sn/enter_mac_sn $sn $bom_version $pcb_version $str_eth0_mac $str_eth1_mac
+		./enter_mac_sn/enter_mac_sn $psn $bom_version $pcb_version $str_eth0_mac $str_eth1_mac
 
 		IFS=" "
-		frame="{@5,#0,"$pn,$s_sn,$eth0_mac,$eth1_mac
+		frame="{@5,#0,"$pn,$sn,$eth0_mac,$eth1_mac
 		echo "frame: $frame"
 		send_data $frame
 	fi
