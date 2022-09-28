@@ -39,8 +39,8 @@ expect_speed=$(echo $str_expectspeed | sed 's/\r//')
 if [ -e "/dev/$sd_device" ]
 then
 
-	echo "time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt"
-	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee emmc_test.log
+	echo "time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt iflag=direct"
+	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt iflag=direct 2>&1 | tee emmc_test.log
 
 	str=$(sed -n '3p' emmc_test.log)
 	#echo "string: $str"

@@ -17,16 +17,16 @@ str_test_num_flag="#"
 log_suffix=".log"
 cfg_name=cfg.ini
 test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM)
-test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
-test_parallel_list=(1 1 1 1 1 1 1 1 1 1 0 1)
-test_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
+test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test_ext.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
+test_parallel_list=(1 1 1 1 1 1 0 1 1 1 0 1)
+test_auto_list=(1 1 1 1 1 1 0 0 0 0 0 1)
 
 test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
-test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
-test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 1 0 1)
+test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test_ext.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
+test_enable_parallel_list=(1 1 1 1 1 1 0 1 1 1 0 1)
 test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0 0)
 test_over_list=(0 0 0 0 0 0 0 0 0 0 0 0)
-test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
+test_enable_auto_list=(1 1 1 1 1 1 0 0 0 0 0 1)
 test_over_cnt=0
 heart_flag=0
 heart_log=heart.log
@@ -427,7 +427,7 @@ function test_process()
 {
 	for ((i=0;i<test_enable_num;i++))
 	do
-		if [ ${test_enable_parallel_list[i]} = "1" ]
+		if [[ ${test_enable_parallel_list[i]} = "1" ]] && [[ ${test_enable_list[i]} != "PCIE_SSD" ]]
 		then
 			sh ${test_enable_fun_list[i]} &
 			test_enable_pid_list[i]=$!
@@ -455,7 +455,13 @@ function test_result_upload()
 		if [[ ${test_enable_parallel_list[i]} = "1" ]] && [[ ${test_over_list[i]} = "0" ]]
 		then
 			status=$(is_process_over ${test_enable_pid_list[i]})
-			#echo "${test_enable_list[i]} ${test_enable_pid_list[i]} $status"
+			echo "${test_enable_list[i]} ${test_enable_pid_list[i]} $status"
+			if [[ ${test_enable_list[i]} = "PCIE_SSD" ]]
+			then 
+				status=over
+				test_enable_auto_list[i]=1
+				echo "${test_enable_list[i]}"
+			fi
 			if [[ $status = "over" ]] && [[ ${test_enable_auto_list[i]} = "1" ]]
 			then
 				test_over_list[i]=1
@@ -474,7 +480,7 @@ function test_result_upload()
 						str_test_result=0
 					fi
 					frame="{@4,#"$test_num,${test_enable_list[i]},$str_test_result,$str_test_time,$str_test_des$str_tail
-					#echo $frame
+					echo $frame
 					send_data $frame
 				fi
 			fi
@@ -509,14 +515,14 @@ function dsi_process()
 	fi
 }
 
-function pwmdac_process()
+function pcie_ssd_process()
 {
-	test_num=$(get_test_item_num "PWMDAC")
-	echo "PWMDAC_test_num: $test_num"
+	test_num=$(get_test_item_num "PCIE_SSD")
+	echo "PCIE_SSD_test_num: $test_num"
 	if [[ $test_num -lt $test_enable_num ]] && [[  ${test_enable_parallel_list[$test_num]} = "0" ]]
 	then
 		test_enable_parallel_list[$test_num]=1
-		aplay -Dhw:0,0 audio.wav
+		./pcie_ssd_test.sh
 	fi
 }
 
@@ -608,7 +614,7 @@ function init_process()
 {
 	test_init
 	test_list_init
-	#pwmdac_process
+	pcie_ssd_process
 	dsi_process
 	test_process
 }
