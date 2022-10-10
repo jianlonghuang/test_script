@@ -24,7 +24,7 @@ echo "v4l2test -d /dev/video1 -f 5 -c -W 1920 -H 1080 -m 0 -t 2"
 v4l2test -d /dev/video1 -f 5 -c -W 1920 -H 1080 -m 0 -t 2 -C 0 &
 
 
-while true
+while false
 do
 	if [ -f $log_file ]
 	then

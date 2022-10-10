@@ -77,25 +77,25 @@ do
 	if [ -e "/dev/$usb_device" ]
 	then
 
-		echo "time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt"
-		time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee usb_test.log
+		echo "time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt iflag=direct"
+		time dd if=/dev/$usb_device of=/dev/null bs=$block_size count=$block_cnt iflag=direct 2>&1 | tee usb_test.log
 		
 		str=$(sed -n '3p' usb_test.log)
 		#echo "string: $str"
 		index=`expr index "$str" /`
 		#echo "index: $index"
 		let comma_last_index=`echo "$str" | awk -F '','' '{printf "%d", length($0)-length($NF)}'`
-		#echo $comma_last_index
+		echo $comma_last_index
 		len=`expr $index - $comma_last_index - 4`
 		fspeed=${str:$comma_last_index+1:$len}
-		#echo "fspeed: $fspeed"
+		echo "fspeed: $fspeed"
 		len=`expr $index - $comma_last_index`
 		rspeed=${str:$comma_last_index+1:$len}
 		echo "speed: $rspeed"
 
 		result=$(echo $fspeed $expect_speed | awk '{if($1>$2) {printf 1} else {printf 0}}')
-		#echo "result=$result"
-		if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
+		echo "result=$result"
+		if [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 		then
 			let passcnt++
 			result_des=$result_des$cfg_section$cnt": OK "$rspeed"; "

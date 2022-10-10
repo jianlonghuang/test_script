@@ -416,6 +416,7 @@ void main(int argc, char *argv[])
 	char pcb_version = 0x01;
 	char bom_version = 'A';
 	char rbuf[EEPROM_SIZE] = {0};
+	int ret;
 
 	struct t_eeprom_header *p_header = &g_eeprom_data.eeprom_header;
 	struct t_atom1_info *p_atom1_info = &g_eeprom_data.atom1_info;
@@ -489,7 +490,10 @@ void main(int argc, char *argv[])
 		p_atom4_info->crc16 = checksum_crc16((unsigned char *)p_atom4_info, sizeof(g_eeprom_data.atom4_info) - 2);
 	}
 
-	eeprom_write_data((unsigned char *)&g_eeprom_data, sizeof(g_eeprom_data));
-	write_eeprom_log("PASS\n");
+	ret = eeprom_write_data((unsigned char *)&g_eeprom_data, sizeof(g_eeprom_data));
+	if (ret == 0)
+		write_eeprom_log("PASS\n");
+	else
+		write_eeprom_log("FAIL\n");
 
 }

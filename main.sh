@@ -4,13 +4,8 @@
 uart_dev=/dev/ttyS3
 baurd=115200
 dtbo=vf2-overlay-uart3-i2c.dtbo
-ms_count=0
-fun_0_init=0
-fun_1_item=1
 fun_3_heart=3
-fun_4_result=4
 uart_recv_data=ttytemp.dat
-eeprom_data=eeprom.eep
 str_head="{@"
 str_tail="}"
 str_test_num_flag="#"
@@ -18,17 +13,19 @@ log_suffix=".log"
 cfg_name=cfg.ini
 test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM)
 test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
-test_parallel_list=(1 1 1 1 1 1 1 1 1 1 0 1)
+#parallel test
+test_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1)
+#auto upload test result
 test_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
 
-test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI)
+test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM)
 test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
-test_enable_parallel_list=(1 1 1 1 1 1 1 1 1 1 0 1)
+test_enable_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1)
 test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0 0)
 test_over_list=(0 0 0 0 0 0 0 0 0 0 0 0)
 test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
-test_over_cnt=0
-heart_flag=0
+test_enable_starttime=(0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_endtime=(0 0 0 0 0 0 0 0 0 0 0 0)
 heart_log=heart.log
 get_module_info=0
 init_first=0
@@ -40,38 +37,38 @@ month=(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
 
 test_enable_num=${#test_enable_list[@]}
 
-function readINI()
+function func_readINI()
 {
  FILENAME=$1; SECTION=$2; KEY=$3
  RESULT=`awk -F '=' '/\['$SECTION'\]/{a=1}a==1&&$1~/'$KEY'/{print $2;exit}' $FILENAME`
  echo $RESULT
 }
 
-function uart3_init()
+function func_uart3_init()
 {
 	mount -t configfs none /sys/kernel/config
 	mkdir -p /sys/kernel/config/device-tree/overlays/dtoverlay
 	cat $dtbo > /sys/kernel/config/device-tree/overlays/dtoverlay/dtbo
 }
 
-function uart3_open()
+function func_uart3_open()
 {
 	stty -F $uart_dev $baurd
 }
 
-function send_data()
+function func_send_data()
 {
 	echo $* > $uart_dev
 }
 
-function set_date()
+function func_set_date()
 {
 	date -s 2022-08-12
 	date -s 09:00:00
 }
 
 
-function heart()
+function func_heart()
 {
 	send_flag=$1
 
@@ -81,7 +78,7 @@ function heart()
 		heart_frame={@$fun_3_heart,$time}
 		if [ "$send_flag" = "1" ]
 		then
-			send_data $heart_frame
+			func_send_data $heart_frame
 		fi
 		echo "1" > $heart_log
 		echo $heart_frame >> $heart_log
@@ -91,13 +88,13 @@ function heart()
 
 function heart_burning()
 {
-	if [ -f "heart.log" ]
+	if [ -f $heart_log ]
 	then
 		line=$(sed -n '1p' $heart_log)
 		if [ "$line" = "1" ]
 		then
 			line=$(sed -n '2p' $heart_log)
-			send_data $line
+			func_send_data $line
 			cat /dev/null > $heart_log
 		fi
 	fi
@@ -131,11 +128,12 @@ function module_info()
 		echo "str_eth1_mac: $str_eth1_mac"
 
 		./enter_mac_sn/enter_mac_sn $psn $bom_version $pcb_version $str_eth0_mac $str_eth1_mac
+		log_file_name=$psn-$pcb_version
 
 		IFS=" "
 		frame="{@5,#0,"$pn,$sn,$eth0_mac,$eth1_mac
 		echo "frame: $frame"
-		send_data $frame
+		func_send_data $frame
 	fi
 
 	IFS=" "
@@ -195,7 +193,7 @@ function test_init()
 	vesion_date=$(get_version_date $line)
 	line=$(sed -n '2p' version.log)
 	#echo $line
-	result=$(echo $line | grep "VF2_51")
+	result=$(echo $line | grep "VF2_")
 	if [ $result != "" ]
 	then
 		v_index=`expr index "$line" v`
@@ -210,7 +208,7 @@ function test_init()
 
 	init_frame="{@0,#main,"$str_version,$vesion_date,$version_mds$str_tail
 	#echo "init_frame: $init_frame"
-	send_data $init_frame
+	func_send_data $init_frame
 }
 
 
@@ -220,7 +218,7 @@ function test_list_init()
 	for ((i=0;i<${#test_list[@]};i++))
 	do
 		cfg_section=${test_list[i]}
-		str_testitem=$(readINI $cfg_name $cfg_section enable)
+		str_testitem=$(func_readINI $cfg_name $cfg_section enable)
 		test_item=$(echo $str_testitem | sed 's/\r//')
 		#echo "$cfg_section: $test_item"
 		if [[ "$test_item" = "y" ]]
@@ -245,30 +243,7 @@ function test_list_init()
 
 	test_list_frame="{@1,#"$test_enable_num,$str_test_list$str_tail
 	#echo "test_list_frame: $test_list_frame"
-	send_data $test_list_frame
-}
-
-function get_run_time()
-{
-	log_file=$1
-	while read -r line
-	do
-		result=$(echo $line | grep "real")
-		if [ "$result" != "" ]
-		then
-			m_index=`expr index "$line" m`
-			s_index=`expr index "$line" s`
-			if [[ $s_index -gt m_index ]] && [[ $m_index -ne 0 ]] && [[ $s_index -ne 0 ]]
-			then
-				len=`expr $s_index - $m_index - 1`
-				run_time=${line:$m_index:$len}
-				run_time=$(echo "$run_time*1000" | bc)
-				echo $run_time
-			fi
-		fi
-		
-	done < $log_file
-
+	func_send_data $test_list_frame
 }
 
 function get_test_item_num()
@@ -313,6 +288,37 @@ function recv_data()
 	echo $info
 }
 
+function test_manual_result_frame()
+{
+	test_num=$1
+	test_result=$2
+
+	if [[ ${test_enable_auto_list[$test_num]} = "0" ]]	\
+		&& [[ ${test_over_list[$test_num]} = "0" ]]
+	then
+		test_name=${test_enable_list[$test_num]}
+
+		if [ $test_result = "1" ]
+		then
+			str_result="PASS"
+		else
+			str_result="FAIL"
+		fi
+
+		echo "$test_name:           $str_result" >> $result_log
+		test_enable_endtime[$test_num]=$(date +%s)
+		str_test_time=$((${test_enable_endtime[$test_num]}-${test_enable_starttime[$test_num]}))
+		str_test_time=$(echo "$str_test_time*1000" | bc)
+		echo "$test_name: $str_test_time ms"
+
+		frame="{@4,#"$test_num,$test_name,$test_result,$str_test_time,$str_result$str_tail
+		echo $frame
+		func_send_data $frame
+		test_over_list[$test_num]=1
+		echo "${test_enable_list[$test_num]} test over"
+	fi
+}
+
 function send_frame()
 {
 	data=$1
@@ -329,7 +335,9 @@ function send_frame()
 	#echo "result2: $result2"
 	#echo "item_index: $item_index"
 	#echo "comma_last_index: $comma_last_index"
-	if [[ "$result1" != "" ]] && [[ $result2 -gt $comma_last_index ]] && [[ $comma_last_index -gt $item_index ]] && [[ $comma_first_index -gt $func_index ]]
+	if [[ "$result1" != "" ]] && [[ $result2 -gt $comma_last_index ]]	\
+		&& [[ $comma_last_index -gt $item_index ]]	\
+		&& [[ $comma_first_index -gt $func_index ]]
 	then
 		len=`expr $comma_last_index - $item_index - 1`
 		test_num=${data:$item_index:$len}
@@ -347,22 +355,8 @@ function send_frame()
 			then
 				len=`expr $result2 - $comma_last_index - 1`
 				test_result=${data:$comma_last_index:$len}
-				#echo "test_result: $test_result"
 
-				frame=${data:0:$comma_last_index}
-				test_name=${test_enable_list[$test_num]}
-
-				if [ $test_result = "1" ]
-				then
-					str_result="PASS"
-				else
-					str_result="FAIL"
-				fi
-
-				log_file=$test_name$log_suffix
-				echo $str_result > $log_file
-				echo "$test_name:           $str_result" >> $result_log
-				test_enable_auto_list[$test_num]=1
+				test_manual_result_frame $test_num $test_result
 			else
 				echo "recv wrong test_num: $test_num"
 			fi
@@ -423,19 +417,19 @@ function is_recv_data()
 }
 
 
-function test_process()
+function parallel_test_process()
 {
 	for ((i=0;i<test_enable_num;i++))
 	do
 		if [ ${test_enable_parallel_list[i]} = "1" ]
 		then
+			test_enable_starttime[i]=$(date +%s)
 			sh ${test_enable_fun_list[i]} &
 			test_enable_pid_list[i]=$!
 			echo "${test_enable_fun_list[i]}: ${test_enable_pid_list[i]}"
 		fi
 	done
 }
-
 
 function is_process_over()
 {
@@ -448,38 +442,70 @@ function is_process_over()
 	fi
 }
 
-function test_result_upload()
+function test_auto_result_frame()
+{
+	test_item=$1
+	log_suffix=".log"
+	log_file=$test_item$log_suffix
+	if [ -f $log_file ]
+	then
+		test_num=$(get_test_item_num $test_item)
+		str_test_des=$(sed -n '1p' $log_file)
+		str_test_time=$(sed -n '2p' $log_file)
+		result=$(echo $str_test_des | grep "PASS")
+		if [ "$result" != "" ]
+		then
+			str_test_result=1
+		else
+			str_test_result=0
+		fi
+		frame="{@4,#"$test_num,$test_item,$str_test_result,$str_test_time,$str_test_des$str_tail
+		echo $frame
+		func_send_data $frame
+	fi
+}
+
+function test_result_auto_upload()
 {
 	for ((i=0;i<test_enable_num;i++))
 	do
-		if [[ ${test_enable_parallel_list[i]} = "1" ]] && [[ ${test_over_list[i]} = "0" ]]
+		if [[ ${test_enable_auto_list[i]} = "1" ]]	\
+			&& [[ ${test_over_list[i]} = "0" ]]
 		then
 			status=$(is_process_over ${test_enable_pid_list[i]})
 			#echo "${test_enable_list[i]} ${test_enable_pid_list[i]} $status"
-			if [[ $status = "over" ]] && [[ ${test_enable_auto_list[i]} = "1" ]]
+			if [[ $status = "over" ]]
 			then
 				test_over_list[i]=1
-				log_suffix=".log"
-				log_file=${test_enable_list[i]}$log_suffix
-				if [ -f $log_file ]
-				then
-					test_num=$(get_test_item_num ${test_enable_list[i]})
-					str_test_des=$(sed -n '1p' $log_file)
-					str_test_time=$(sed -n '2p' $log_file)
-					result=$(echo $str_test_des | grep "PASS")
-					if [ "$result" != "" ]
-					then
-						str_test_result=1
-					else
-						str_test_result=0
-					fi
-					frame="{@4,#"$test_num,${test_enable_list[i]},$str_test_result,$str_test_time,$str_test_des$str_tail
-					#echo $frame
-					send_data $frame
-				fi
+				echo "${test_enable_list[i]} ${test_enable_pid_list[i]} $status"
+				test_auto_result_frame ${test_enable_list[i]}
 			fi
 		fi
 	done
+}
+
+serial_test_item=0
+function serial_test_process()
+{
+	if [[ $init_first = "1" ]] && [[ $serial_test_item -lt $test_enable_num ]]
+	then
+		#echo "serial_test_item: $serial_test_item"
+		if [ ${test_enable_parallel_list[serial_test_item]} = "0" ]
+		then
+			echo "${test_enable_fun_list[serial_test_item]}"
+			test_enable_starttime[$serial_test_item]=$(date +%s)
+			sh ${test_enable_fun_list[serial_test_item]}
+
+			if [[ ${test_enable_auto_list[$serial_test_item]} = "1" ]]	\
+				&& [[ ${test_over_list[$serial_test_item]} = "0" ]]
+			then
+				test_over_list[$serial_test_item]=1
+				echo "${test_enable_list[$serial_test_item]} test over"
+				test_auto_result_frame ${test_enable_list[serial_test_item]}
+			fi
+		fi
+		let serial_test_item++
+	fi
 }
 
 function get_dsi_result()
@@ -499,24 +525,18 @@ function get_dsi_result()
 
 function dsi_process()
 {
-	test_num=$(get_test_item_num "DSI")
-	echo "dsi_test_num: $test_num"
-	if [[ $test_num -lt $test_enable_num ]] && [[  ${test_enable_parallel_list[$test_num]} = "0" ]]
+	dsi_test_num=$(get_test_item_num "DSI")
+	hdmi_test_num=$(get_test_item_num "HDMI")
+	echo "dsi_test_num: $dsi_test_num"
+	if [[ $dsi_test_num -lt $test_enable_num ]]	\
+		&& [[ $hdmi_test_num -lt $test_enable_num ]]	\
+		&& [[  ${test_enable_parallel_list[$dsi_test_num]} = "2" ]]	\
+		&& [[  ${test_enable_parallel_list[$hdmi_test_num]} = "2" ]]
 	then
+		test_enable_starttime[$dsi_test_num]=$(date +%s)
+		test_enable_starttime[$hdmi_test_num]=$(date +%s)
+		modetest -M starfive
 		get_dsi_result | modetest -M starfive -a -s 116@31:1920x1080 -s 118@35:800x480 -P 39@31:1920x1080 -P 74@35:800x480 -F tiles,tiles
-
-		test_enable_parallel_list[$test_num]=1
-	fi
-}
-
-function pwmdac_process()
-{
-	test_num=$(get_test_item_num "PWMDAC")
-	echo "PWMDAC_test_num: $test_num"
-	if [[ $test_num -lt $test_enable_num ]] && [[  ${test_enable_parallel_list[$test_num]} = "0" ]]
-	then
-		test_enable_parallel_list[$test_num]=1
-		aplay -Dhw:0,0 audio.wav
 	fi
 }
 
@@ -524,20 +544,30 @@ function manual_outcome_overtime()
 {
 	endtime=$(date +%s)
 	runtime=$(($endtime-$starttime))
-	echo "manual_outcome_overtime: $runtime"
+	#echo "manual_outcome_overtime: $runtime"
 	if [[ $runtime -gt 60 ]] && [[ $outcome_overtime -eq 0 ]]
 	then
 		outcome_overtime=1
 		for ((i=0;i<test_enable_num;i++))
 		do
-			if [ ${test_enable_auto_list[$i]} = "0" ]
+			if [[ ${test_enable_auto_list[$i]} = "0" ]]	\
+				&& [[ ${test_over_list[$i]} = "0" ]]
 			then
 				test_name=${test_enable_list[$i]}
-				log_file=$test_name$log_suffix
-				#echo "log_file:$log_file"
-				echo "FAIL" > $log_file
-				echo "$test_name:           FAIL" >> $result_log
-				test_enable_auto_list[$i]=1
+				test_result=0
+				str_result="FAIL"
+				echo "$test_name:           $str_result" >> $result_log
+
+				test_enable_endtime[$i]=$(date +%s)
+				str_test_time=$((${test_enable_endtime[$i]}-${test_enable_starttime[$i]}))
+				str_test_time=$(echo "$str_test_time*1000" | bc)
+				echo "$test_name: $str_test_time ms"
+
+				frame="{@4,#"$i,$test_name,$test_result,$str_test_time,$str_result$str_tail
+				echo $frame
+				func_send_data $frame
+				test_over_list[$i]=1
+				echo "${test_enable_list[$i]} test over"
 			fi
 		done
 	fi
@@ -545,6 +575,22 @@ function manual_outcome_overtime()
 
 function output_result()
 {
+	year=$(date +%y)
+	mon=$(date +%m)
+	day=$(date +%d)
+	log_file_name=$year-$mon-$day-$log_file_name$log_suffix
+
+	if [ ! -d log ]
+	then
+		mkdir log
+	fi
+	log_file_name=log/$log_file_name
+	echo "log_file_name: $log_file_name"
+	if [ -f $log_file_name ]
+	then
+		rm $log_file_name
+	fi
+
 	echo "************************************************"
 	echo "*********************Result*********************"
 	echo "************************************************"
@@ -556,6 +602,7 @@ function output_result()
 	if [[ "$result" != "" ]]
 	then
 		echo $line
+		echo $line >> $log_file_name
 	fi
 	done < $result_log
 
@@ -565,6 +612,7 @@ function output_result()
 	if [[ "$result" != "" ]]
 	then
 		echo $line
+		echo $line >> $log_file_name
 	fi
 	done < $result_log
 }
@@ -575,7 +623,7 @@ function all_test_over()
 	then
 		endtime=$(date +%s)
 		runtime=$(($endtime-$starttime))
-		echo "init_overtime: $runtime"
+		#echo "init_overtime: $runtime"
 		if [ $runtime -gt 60 ]
 		then
 			init_overtime=1
@@ -587,19 +635,30 @@ function all_test_over()
 	test_over_cnt=0
 	for ((i=0;i<test_enable_num;i++))
 	do
-		if [[ ${test_enable_parallel_list[i]} = "1" ]] && [[ ${test_over_list[i]} = "1" ]]
+		if [[ ${test_over_list[i]} = "1" ]]
 		then
 			let test_over_cnt++
 		fi
 	done
 
 	#echo "test_over_cnt: $test_over_cnt"
-	if [[ $test_over_cnt -eq $test_enable_num ]] || [[ "$init_overtime" = "1" ]]
+	if [[ $test_over_cnt -eq $test_enable_num ]]	\
+		|| [[ "$init_overtime" = "1" ]]
 	then
 		output_result
 		echo "all test over"
 		killall cat
 		kill $heart_pid
+		result=`ps | grep "aplay" | grep -v "grep"`
+		if [ "$result" != "" ]
+		then
+			killall aplay
+		fi
+		result=`ps | grep "v4l2test" | grep -v "grep"`
+		if [ "$result" != "" ]
+		then
+			killall v4l2test
+		fi
 		exit
 	fi
 }
@@ -608,38 +667,40 @@ function init_process()
 {
 	test_init
 	test_list_init
-	#pwmdac_process
 	dsi_process
-	test_process
+	parallel_test_process
 }
 
 rm *.log
-set_date
-uart3_init
-uart3_open
+func_set_date
+func_uart3_init
+func_uart3_open
 
 old_info=$(recv_data)
 
 #module_info
 
-heart 0 &
+#func_heart 0 &
+func_heart 1 &
 heart_pid=$!
 starttime=$(date +%s)
 
 while true
 do
+	serial_test_process
+
 	if [[ "$init_first" = "0" ]] && [[ "$get_module_info" = "1" ]]
 	then
 		init_process
 		init_first=1
 		starttime=$(date +%s)
 	fi
-	
+
 	is_recv_data 5
 	
-	test_result_upload
+	test_result_auto_upload
 
-	heart_burning
+	#heart_burning
 
 	all_test_over
 

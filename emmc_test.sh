@@ -39,8 +39,8 @@ expect_speed=$(echo $str_expectspeed | sed 's/\r//')
 if [ -e "/dev/$sd_device" ]
 then
 
-	echo "time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt"
-	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt 2>&1 | tee emmc_test.log
+	echo "time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt iflag=direct"
+	time dd if=/dev/$sd_device of=/dev/null bs=$block_size count=$block_cnt iflag=direct 2>&1 | tee emmc_test.log
 
 	str=$(sed -n '3p' emmc_test.log)
 	#echo "string: $str"
@@ -50,14 +50,14 @@ then
 	#echo $comma_last_index
 	len=`expr $index - $comma_last_index - 4`
 	fspeed=${str:$comma_last_index+1:$len}
-	#echo "fspeed: $fspeed"
+	echo "fspeed: $fspeed"
 	len=`expr $index - $comma_last_index`
 	rspeed=${str:$comma_last_index+1:$len}
 	echo "speed: $rspeed"
 		
 	result=$(echo $rspeed $expect_speed | awk '{if($1>$2) {printf 1} else {printf 0}}')
-	#echo "result=$result"
-	if [[ $result = 1 ]] && [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
+	echo "result=$result"
+	if [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
 	then
 		echo "EMCC READ PASS"
 		echo "EMCC READ:      PASS  read speed: $rspeed" >> test_result.log

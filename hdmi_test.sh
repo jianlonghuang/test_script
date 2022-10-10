@@ -13,7 +13,7 @@ fi
 
 starttime=$(date +%s)
 
-while true
+while false
 do
 	if [ -f $log_file ]
 	then

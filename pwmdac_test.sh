@@ -18,7 +18,7 @@ echo "aplay -Dhw:0,0 audio.wav"
 aplay -Dhw:0,0 audio.wav &
 
 
-while true
+while false
 do
 	if [ -f $log_file ]
 	then
