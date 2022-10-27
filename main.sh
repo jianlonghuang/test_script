@@ -11,21 +11,21 @@ str_tail="}"
 str_test_num_flag="#"
 log_suffix=".log"
 cfg_name=cfg.ini
-test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM)
-test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
+test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM USB_DEVICE)
+test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh" "usb_device_test.sh")
 #parallel test
-test_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1)
+test_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1 1)
 #auto upload test result
-test_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
+test_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1 1)
 
-test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM)
-test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh")
-test_enable_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1)
-test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0 0)
-test_over_list=(0 0 0 0 0 0 0 0 0 0 0 0)
-test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1)
-test_enable_starttime=(0 0 0 0 0 0 0 0 0 0 0 0)
-test_enable_endtime=(0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM USB_DEVICE)
+test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh" "usb_device_test.sh")
+test_enable_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1 1)
+test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0 0 0)
+test_over_list=(0 0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1 1)
+test_enable_starttime=(0 0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_endtime=(0 0 0 0 0 0 0 0 0 0 0 0 0)
 heart_log=heart.log
 get_module_info=0
 init_first=0

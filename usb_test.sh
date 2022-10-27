@@ -73,7 +73,20 @@ do
 		usb_device=$usb4_device
 		;;
 	esac
-	
+
+	str_wrong_msg=": Cannot enable. Maybe the USB cable is bad?"
+	str_wrong_msg="port"$cnt$str_wrong_msg
+	#echo $str_wrong_msg
+	wrong_msg=`dmesg | grep -c "$str_wrong_msg"`
+	echo "wrong_msg: $wrong_msg"
+	if [[ $wrong_msg -gt 0 ]]
+	then
+		str_wrong_msg="wrong msg"
+	else
+		str_wrong_msg=""
+	fi
+	echo $str_wrong_msg
+
 	if [ -e "/dev/$usb_device" ]
 	then
 
@@ -95,7 +108,7 @@ do
 
 		result=$(echo $fspeed $expect_speed | awk '{if($1>$2) {printf 1} else {printf 0}}')
 		echo "result=$result"
-		if [[ $fspeed != 0 ]] && [[ $fspeed != "" ]]
+		if [[ $fspeed != 0 ]] && [[ $fspeed != "" ]] && [[ "$str_wrong_msg" != "wrong msg" ]]
 		then
 			let passcnt++
 			result_des=$result_des$cfg_section$cnt": OK "$rspeed"; "
@@ -104,7 +117,7 @@ do
 		else
 			echo "USB$cnt READ FAIL"
 			echo "USB$cnt READ:      FAIL  read speed: $rspeed" >> test_result.log
-			result_des=$result_des$cfg_section$cnt": FAIL "$rspeed"; "
+			result_des=$result_des$cfg_section$cnt": FAIL "$rspeed" $str_wrong_msg; "
 		fi
 		
 
@@ -140,7 +153,7 @@ do
 	else
 		echo "USB$cnt FAIL"
 		echo "USB$cnt:           FAIL" >> test_result.log
-		result_des=$result_des$cfg_section$cnt":NO DEVICE; "
+		result_des=$result_des$cfg_section$cnt":NO DEVICE $str_wrong_msg; "
 	fi
 
 	let cnt++
