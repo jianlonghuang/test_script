@@ -11,21 +11,21 @@ str_tail="}"
 str_test_num_flag="#"
 log_suffix=".log"
 cfg_name=cfg.ini
-test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM USB_DEVICE)
-test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh" "usb_device_test.sh")
+test_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM USB_DEVICE 4_LANE_MIPI)
+test_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh" "usb_device_test.sh" "4-lane-mipi_test.sh")
 #parallel test
-test_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1 1)
+test_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1 1 2)
 #auto upload test result
-test_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1 1)
+test_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1 1 0)
 
-test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM USB_DEVICE)
-test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh" "usb_device_test.sh")
-test_enable_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1 1)
-test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0 0 0)
-test_over_list=(0 0 0 0 0 0 0 0 0 0 0 0 0)
-test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1 1)
-test_enable_starttime=(0 0 0 0 0 0 0 0 0 0 0 0 0)
-test_enable_endtime=(0 0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_list=(GPIO GMAC0 GMAC1 USB SD EMMC PCIE_SSD HDMI CSI PWMDAC DSI EEPROM USB_DEVICE 4_LANE_MIPI)
+test_enable_fun_list=("gpio_test.sh" "gmac0_test.sh" "gmac1_test.sh" "usb_test.sh" "sd_test.sh" "emmc_test.sh" "pcie_ssd_test.sh" "hdmi_test.sh" "mipi_csi_test.sh" "pwmdac_test.sh" "mipi_dsi_test.sh" "eeprom_test.sh" "usb_device_test.sh" "4-lane-mipi_test.sh")
+test_enable_parallel_list=(1 1 1 0 0 0 0 2 1 1 2 1 1 2)
+test_enable_pid_list=(0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+test_over_list=(0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_auto_list=(1 1 1 1 1 1 1 0 0 0 0 1 1 0)
+test_enable_starttime=(0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+test_enable_endtime=(0 0 0 0 0 0 0 0 0 0 0 0 0 0)
 heart_log=heart.log
 get_module_info=0
 init_first=0
@@ -232,7 +232,7 @@ function test_list_init()
 		fi
 	done
 
-	#echo "test_enable_num: $test_enable_num"
+	echo "test_enable_num: $test_enable_num"
 	str_test_list=${test_enable_list[0]}
 	for ((i=1;i<test_enable_num;i++))
 	do
@@ -242,7 +242,7 @@ function test_list_init()
 	done
 
 	test_list_frame="{@1,#"$test_enable_num,$str_test_list$str_tail
-	#echo "test_list_frame: $test_list_frame"
+	echo "test_list_frame: $test_list_frame"
 	func_send_data $test_list_frame
 }
 
@@ -525,18 +525,33 @@ function get_dsi_result()
 
 function dsi_process()
 {
-	dsi_test_num=$(get_test_item_num "DSI")
-	hdmi_test_num=$(get_test_item_num "HDMI")
-	echo "dsi_test_num: $dsi_test_num"
-	if [[ $dsi_test_num -lt $test_enable_num ]]	\
-		&& [[ $hdmi_test_num -lt $test_enable_num ]]	\
-		&& [[  ${test_enable_parallel_list[$dsi_test_num]} = "2" ]]	\
-		&& [[  ${test_enable_parallel_list[$hdmi_test_num]} = "2" ]]
+	cfg_section="4_LANE_MIPI"
+	str_testitem=$(func_readINI $cfg_name $cfg_section enable)
+	test_item=$(echo $str_testitem | sed 's/\r//')
+	echo "$cfg_section: $test_item"
+	if [[ "$test_item" = "y" ]]
 	then
-		test_enable_starttime[$dsi_test_num]=$(date +%s)
-		test_enable_starttime[$hdmi_test_num]=$(date +%s)
-		modetest -M starfive
-		get_dsi_result | modetest -M starfive -a -s 116@31:1920x1080 -s 118@35:800x480 -P 39@31:1920x1080 -P 74@35:800x480 -F tiles,tiles
+		dsi_test_num=$(get_test_item_num "4_LANE_MIPI")
+		if [[ $dsi_test_num -lt $test_enable_num ]]	\
+			&& [[  ${test_enable_parallel_list[$dsi_test_num]} = "2" ]]
+		then
+			test_enable_starttime[$dsi_test_num]=$(date +%s)
+			get_dsi_result | modetest -M starfive -D 0 -a -s 118@35:800x1280 -P 74@35:800x1280@RG16 -Ftiles
+		fi
+	else
+		dsi_test_num=$(get_test_item_num "DSI")
+		hdmi_test_num=$(get_test_item_num "HDMI")
+		echo "dsi_test_num: $dsi_test_num"
+		if [[ $dsi_test_num -lt $test_enable_num ]]	\
+			&& [[ $hdmi_test_num -lt $test_enable_num ]]	\
+			&& [[  ${test_enable_parallel_list[$dsi_test_num]} = "2" ]]	\
+			&& [[  ${test_enable_parallel_list[$hdmi_test_num]} = "2" ]]
+		then
+			test_enable_starttime[$dsi_test_num]=$(date +%s)
+			test_enable_starttime[$hdmi_test_num]=$(date +%s)
+			modetest -M starfive
+			get_dsi_result | modetest -M starfive -a -s 116@31:1920x1080 -s 118@35:800x480 -P 39@31:1920x1080 -P 74@35:800x480 -F tiles,tiles
+		fi
 	fi
 }
 
